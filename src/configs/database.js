@@ -9,6 +9,5 @@ export const connectDB = () =>
     })
     .then(() => console.log("Connected to MongoDB."))
     .catch((err) => {
-      console.log(process.env.DB_URI);
       console.log("Failed to connect to MongoDB. Error: ", err.message);
     });
