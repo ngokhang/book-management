@@ -1,8 +1,6 @@
-import { schemas } from "../validator_schema/index.js";
-
 export default function validateData(schema) {
   return (req, res, next) => {
-    const { error } = schemas.createNewUserSchema.validate(req.body);
+    const { error } = schema.validate(req.body);
     const valid = error == null;
 
     if (valid) {
