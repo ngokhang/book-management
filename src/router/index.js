@@ -5,6 +5,7 @@ import AuthenticatedMiddleware from "../middlewares/AuthenticatedMiddleware.js";
 import CheckIsAdminMiddleware from "../middlewares/CheckIsAdminMiddleware.js";
 import validateData from "../middlewares/ValidateData.js";
 import { schemas } from "../validator_schema/index.js";
+import { CategoryController } from "../controllers/CategoryController.js";
 
 export const router = express.Router();
 
@@ -43,4 +44,26 @@ router.put(
 // Token routers
 router.post("/refresh-token", AuthController.refreshToken);
 
-//
+// Category routers
+router
+  .route("/category")
+  .get(CategoryController.getAll)
+  .post(
+    [
+      validateData(schemas.createCategorySchema),
+      AuthenticatedMiddleware(),
+      CheckIsAdminMiddleware(),
+    ],
+    CategoryController.create
+  )
+  .delete(CheckIsAdminMiddleware(), CategoryController.deleteMany);
+router.delete(
+  "/category/delete-all",
+  [CheckIsAdminMiddleware()],
+  CategoryController.deleteAll
+);
+router
+  .route("/category/:_id")
+  .get(CategoryController.get)
+  .patch([CheckIsAdminMiddleware()], CategoryController.update)
+  .delete([CheckIsAdminMiddleware()], CategoryController.delete);

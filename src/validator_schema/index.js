@@ -28,4 +28,14 @@ export const schemas = {
       .label("Confirm password")
       .messages({ "any.only": "{{#label}} does not match" }),
   }),
+
+  createCategorySchema: Joi.object({
+    categories: Joi.array()
+      .items({
+        name: Joi.string().required(),
+        description: Joi.string().required(),
+      })
+      .required()
+      .min(1),
+  }).required(),
 };
