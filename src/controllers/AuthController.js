@@ -2,6 +2,8 @@ import "dotenv/config";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { AuthServices } from "../services/AuthServices.js";
 import { JwtServices } from "../services/JwtServices.js";
+import { response } from "../helpers/response.js";
+import getAccessToken from "../helpers/getAccessToken.js";
 
 export const AuthController = {
   login: async (req, res, next) => {
@@ -22,11 +24,7 @@ export const AuthController = {
           sameSite: "none",
         });
 
-        return res.json({
-          message: "Login successful",
-          user,
-          accessToken,
-        });
+        return response(res, 200, "Login successful", { ...user, accessToken });
       })
       .catch((err) => {
         next(err);
@@ -42,12 +40,7 @@ export const AuthController = {
     };
 
     return await AuthServices.register(data)
-      .then((result) => {
-        return res.json({
-          message: "User created successfully",
-          data: result,
-        });
-      })
+      .then((result) => response(res, 201, "User created successfully", result))
       .catch((err) => {
         next(err);
       });
@@ -82,9 +75,31 @@ export const AuthController = {
       sameSite: "none",
     });
 
-    return res.json({
-      message: "Token refreshed",
+    return response(res, 201, "Token refreshed", {
       accessToken: newAccessToken,
     });
+  },
+  changePassword: async (req, res, next) => {
+    const accessToken = getAccessToken(req);
+    const { email } = JwtServices.verify(
+      accessToken,
+      process.env.ACCESS_TOKEN_SECRET
+    );
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    if (!email) return next(new ApiErrorHandler(401, "Unauthorized access"));
+
+    return await AuthServices.changePassword({
+      email,
+      oldPassword,
+      newPassword,
+      confirmPassword,
+    })
+      .then((result) =>
+        response(res, 200, "Password changed successfully", result)
+      )
+      .catch((err) => {
+        next(err);
+      });
   },
 };

@@ -14,4 +14,28 @@ export const UserServices = {
       .then((res) => res)
       .catch((err) => err);
   },
+  getUserByCondition: async (params) => {
+    return await User.findOne({ ...params })
+      .exec()
+      .then((res) => res)
+      .catch((err) => err);
+  },
+  delete: async (params) => {
+    const user = await User.findOne({ ...params });
+    if (!user) throw new Error("User invalid");
+
+    return await User.deleteOne({ ...params })
+      .exec()
+      .then((res) => res)
+      .catch((err) => err);
+  },
+  update: async (params, data) => {
+    const user = await User.findOne({ ...params });
+    if (!user) throw new Error("User invalid");
+
+    return await User.updateOne({ ...params }, { ...data })
+      .exec()
+      .then((res) => res)
+      .catch((err) => err);
+  },
 };

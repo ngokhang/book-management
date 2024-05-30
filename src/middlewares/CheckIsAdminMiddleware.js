@@ -6,7 +6,7 @@ export default function CheckIsAdminMiddleware() {
     const accessToken = req.header("authorization").split(" ")[1];
     const { role } = JwtServices.decode(accessToken);
     if (role !== "admin") {
-      return next(new ApiErrorHandler(403, "You are not admin"));
+      return next(new ApiErrorHandler(403, "Forbidden"));
     }
 
     next();

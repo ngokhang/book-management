@@ -9,6 +9,23 @@ export const schemas = {
       .required()
       .messages({ "any.required": "Last name is required" }),
     email: Joi.string().email().required(),
-    password: Joi.string().min(8).required(),
+    password: Joi.string().min(6).required(),
+  }),
+
+  updateUserSchema: Joi.object().keys({
+    firstName: Joi.string(),
+    lastName: Joi.string(),
+    email: Joi.string().email(),
+  }),
+
+  changePasswordSchema: Joi.object().keys({
+    oldPassword: Joi.string().required().min(6),
+    newPassword: Joi.string().required().min(6),
+    confirmPassword: Joi.string()
+      .valid(Joi.ref("newPassword"))
+      .required()
+      .min(6)
+      .label("Confirm password")
+      .messages({ "any.only": "{{#label}} does not match" }),
   }),
 };

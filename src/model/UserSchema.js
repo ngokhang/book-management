@@ -20,7 +20,6 @@ const userSchema = new Schema({
     type: String,
     required: true,
     trim: true,
-    hidden: true,
   },
   role: {
     type: String,

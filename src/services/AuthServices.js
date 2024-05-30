@@ -1,9 +1,9 @@
-import { User } from "../model/UserSchema.js";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import "dotenv/config";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
+import { User } from "../model/UserSchema.js";
 import { JwtServices } from "./JwtServices.js";
+import { utils } from "../utils/index.js";
 
 export const AuthServices = {
   login: async (data) => {
@@ -31,12 +31,12 @@ export const AuthServices = {
     const accessToken = JwtServices.sign(
       { _id, firstName, lastName, role, email },
       process.env.ACCESS_TOKEN_SECRET,
-      "60s"
+      process.env.ACCESS_TOKEN_LIFE
     );
     const refreshToken = JwtServices.sign(
       { _id, firstName, lastName, role, email },
       process.env.REFRESH_TOKEN_SECRET,
-      "1d"
+      process.env.REFRESH_TOKEN_LIFE
     );
 
     return {
@@ -64,6 +64,26 @@ export const AuthServices = {
         const { password, ...user } = res.toObject();
         return user;
       })
+      .catch((err) => Promise.reject(err));
+  },
+
+  changePassword: async (data) => {
+    const { email, oldPassword, newPassword } = data;
+    const userExisting = await User.findOne({ email });
+
+    if (!userExisting) throw new ApiErrorHandler(401, "User not found");
+    const isPasswordMatch = await utils.comparePassword(
+      oldPassword,
+      userExisting.password
+    );
+    if (!isPasswordMatch)
+      throw new ApiErrorHandler(401, "Password is incorrect");
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    return await User.findOneAndUpdate({ email }, { password: hashedPassword })
+      .then((res) => res)
       .catch((err) => Promise.reject(err));
   },
 };
