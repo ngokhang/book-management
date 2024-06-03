@@ -6,6 +6,8 @@ import CheckIsAdminMiddleware from "../middlewares/CheckIsAdminMiddleware.js";
 import validateData from "../middlewares/ValidateData.js";
 import { schemas } from "../validator_schema/index.js";
 import { CategoryController } from "../controllers/CategoryController.js";
+import { BookController } from "../controllers/BookController.js";
+import { utils } from "../utils/index.js";
 
 export const router = express.Router();
 
@@ -14,37 +16,40 @@ router
   .route("/user")
   .get(
     [AuthenticatedMiddleware(), CheckIsAdminMiddleware()],
-    UserController.getAll
+    UserController.getAll,
   );
 router
   .route("/user/:id")
   .get([AuthenticatedMiddleware()], UserController.get)
   .put(
     [AuthenticatedMiddleware(), validateData(schemas.updateUserSchema)],
-    UserController.update
+    UserController.update,
   )
   .delete(
     [AuthenticatedMiddleware(), CheckIsAdminMiddleware()],
-    UserController.delete
+    UserController.delete,
   );
 
 // Auth routers
 router.post(
   "/register",
   validateData(schemas.createNewUserSchema),
-  AuthController.register
+  AuthController.register,
 );
 router.post("/login", AuthController.login);
 router.put(
   "/change-password",
   [AuthenticatedMiddleware(), validateData(schemas.changePasswordSchema)],
-  AuthController.changePassword
+  AuthController.changePassword,
 );
 
 // Token routers
 router.post("/refresh-token", AuthController.refreshToken);
 
 // Category routers
+/**
+ * @swagger
+ * /category: */
 router
   .route("/category")
   .get(CategoryController.getAll)
@@ -54,16 +59,47 @@ router
       AuthenticatedMiddleware(),
       CheckIsAdminMiddleware(),
     ],
-    CategoryController.create
+    utils.asyncHandler(CategoryController.create),
   )
-  .delete(CheckIsAdminMiddleware(), CategoryController.deleteMany);
+  .delete(
+    CheckIsAdminMiddleware(),
+    utils.asyncHandler(CategoryController.deleteMany),
+  );
 router.delete(
   "/category/delete-all",
   [CheckIsAdminMiddleware()],
-  CategoryController.deleteAll
+  utils.asyncHandler(CategoryController.deleteAll),
 );
 router
   .route("/category/:_id")
   .get(CategoryController.get)
-  .patch([CheckIsAdminMiddleware()], CategoryController.update)
-  .delete([CheckIsAdminMiddleware()], CategoryController.delete);
+  .patch(
+    [CheckIsAdminMiddleware()],
+    utils.asyncHandler(CategoryController.update),
+  )
+  .delete(
+    [CheckIsAdminMiddleware()],
+    utils.asyncHandler(CategoryController.delete),
+  );
+
+// Book routers
+/**
+ *
+ */
+router
+  .route("/book")
+  .get(BookController.getAll)
+  .post(CheckIsAdminMiddleware(), utils.asyncHandler(BookController.create))
+  .delete(
+    CheckIsAdminMiddleware(),
+    utils.asyncHandler(BookController.deleteAll),
+  );
+
+router
+  .route("/book/:_id")
+  .get(utils.asyncHandler(BookController.get))
+  .patch(CheckIsAdminMiddleware(), utils.asyncHandler(BookController.update))
+  .delete(
+    CheckIsAdminMiddleware(),
+    utils.asyncHandler(BookController.deleteOne),
+  );

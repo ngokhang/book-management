@@ -20,7 +20,7 @@ export const AuthServices = {
     // Check validity of password
     const isPasswordMatch = await bcrypt.compare(
       password,
-      userExisting.password
+      userExisting.password,
     );
 
     // Check if password is incorrect
@@ -31,12 +31,12 @@ export const AuthServices = {
     const accessToken = JwtServices.sign(
       { _id, firstName, lastName, role, email },
       process.env.ACCESS_TOKEN_SECRET,
-      process.env.ACCESS_TOKEN_LIFE
+      process.env.ACCESS_TOKEN_LIFE,
     );
     const refreshToken = JwtServices.sign(
       { _id, firstName, lastName, role, email },
       process.env.REFRESH_TOKEN_SECRET,
-      process.env.REFRESH_TOKEN_LIFE
+      process.env.REFRESH_TOKEN_LIFE,
     );
 
     return {
@@ -51,7 +51,7 @@ export const AuthServices = {
     const existingUser = await User.findOne({ email });
 
     if (existingUser)
-      throw new ApiErrorHandler(401, "User with this email already exists");
+      throw new ApiErrorHandler(409, "User with this email already exists");
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -74,10 +74,10 @@ export const AuthServices = {
     if (!userExisting) throw new ApiErrorHandler(401, "User not found");
     const isPasswordMatch = await utils.comparePassword(
       oldPassword,
-      userExisting.password
+      userExisting.password,
     );
     if (!isPasswordMatch)
-      throw new ApiErrorHandler(401, "Password is incorrect");
+      throw new ApiErrorHandler(401, "Current password is incorrect");
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);

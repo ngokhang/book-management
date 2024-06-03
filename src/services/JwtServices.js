@@ -24,12 +24,12 @@ export const JwtServices = {
     const newAccessToken = JwtServices.sign(
       rest,
       process.env.ACCESS_TOKEN_SECRET,
-      "60s"
+      "60s",
     );
     const newRefreshToken = JwtServices.sign(
       rest,
       process.env.REFRESH_TOKEN_SECRET,
-      "1d"
+      "1d",
     );
 
     return {

@@ -14,5 +14,6 @@ const CategoriesSchema = new Schema({
 });
 
 CategoriesSchema.plugin(mongoosePaginate);
+CategoriesSchema.index({ name: 1 }, { unique: true });
 
 export const Categories = mongoose.model("Categories", CategoriesSchema);

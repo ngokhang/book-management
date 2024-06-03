@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
 import "dotenv/config";
 
-export const connectDB = () =>
+export const connectDB = () => {
+  mongoose.set("debug", true);
+  mongoose.set("debug", { color: true });
   mongoose
     .connect(process.env.DB_URI, {
       useNewUrlParser: true,
@@ -11,3 +13,4 @@ export const connectDB = () =>
     .catch((err) => {
       console.log("Failed to connect to MongoDB. Error: ", err.message);
     });
+};

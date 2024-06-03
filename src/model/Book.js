@@ -1,19 +1,27 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
+// import mongoosePaginate from "mongoose-paginate-v2";
+import mongoosePaginate from "mongoose-aggregate-paginate-v2";
 
-const BookSchema = mongoose.Schema({
+const BookSchema = new Schema({
   name: {
     type: String,
     required: true,
     trim: true,
   },
-  author: {
-    type: mongoose.Schema.Types.Array,
-    required: true,
-  },
-  categories: {
-    type: mongoose.Schema.Types.Array,
-    required: true,
-  },
+  author: [
+    {
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: "Author",
+    },
+  ],
+  categories: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Categories",
+      required: true,
+    },
+  ],
   description: {
     type: String,
     trim: true,
@@ -23,11 +31,8 @@ const BookSchema = mongoose.Schema({
     type: String,
     required: true,
   },
-  isBorrowed: {
-    type: Boolean,
-    require: true,
-    default: true,
-  },
 });
+
+BookSchema.plugin(mongoosePaginate);
 
 export const Book = mongoose.model("Book", BookSchema);

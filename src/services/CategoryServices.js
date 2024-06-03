@@ -1,3 +1,4 @@
+import { StatusCodes } from "http-status-codes";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { Categories } from "../model/Categories.js";
 
@@ -8,65 +9,93 @@ export const CategoryServices = {
       { page: data._page, limit: data._limit },
       function (err, result) {
         if (err) {
-          return Promise.reject(err);
+          throw err;
         }
         return result;
-      }
+      },
     );
   },
   get: async (data) => {
-    return Categories.findOne({ ...data })
-      .then((result) => result)
-      .catch((err) => Promise.reject(err));
+    const categories = await Categories.findOne({ _id: data._id });
+
+    if (!categories)
+      throw new ApiErrorHandler(StatusCodes.NOT_FOUND, "Category not found");
+
+    return categories;
   },
   create: async (data) => {
     const { categories } = data;
 
-    await Categories.collection.indexExists("name_1").then((result) => {
-      if (!result) {
-        Categories.collection.createIndex({ name: 1 }, { unique: true });
-      }
-    });
-
     return await Categories.collection
       .insertMany(categories)
       .then((result) => result)
-      .catch((err) => Promise.reject(err));
+      .catch((err) => {
+        throw err;
+      });
   },
   update: async (data) => {
-    return Categories.findOneAndUpdate(
+    return await Categories.findOneAndUpdate(
       { _id: data._id },
       { ...data },
-      { new: true }
+      { new: true },
     )
-      .then((result) => result)
-      .catch((err) => Promise.reject(err));
-  },
-  delete: async (data) => {
-    return Categories.findOneAndDelete({ _id: data._id })
       .then((result) => {
         if (!result) {
-          return Promise.reject(new ApiErrorHandler(400, "Category not found"));
+          throw new ApiErrorHandler(400, "Category not found");
+        }
+
+        return result;
+      })
+      .catch((err) => {
+        throw err;
+      });
+  },
+  delete: async (data) => {
+    return await Categories.findOneAndDelete({ _id: data._id })
+      .then((result) => {
+        if (!result) {
+          throw new ApiErrorHandler(400, "Category not found");
         }
         return result;
       })
-      .catch((err) => Promise.reject(err));
+      .catch((err) => {
+        throw err;
+      });
   },
   deleteMany: async (data) => {
-    return Categories.deleteMany({ _id: { $in: data.categories_selected } })
+    return await Categories.deleteMany({
+      _id: { $in: data.categories_selected },
+    })
       .then((result) => {
         if (result.deletedCount === 0) {
-          return Promise.reject(
-            new ApiErrorHandler(400, "Categories not found")
-          );
+          throw new ApiErrorHandler(400, "Categories not found");
         }
         return result;
       })
-      .catch((err) => Promise.reject(err));
+      .catch((err) => {
+        throw err;
+      });
   },
   deleteAll: async () => {
-    return Categories.deleteMany({})
-      .then((result) => result)
-      .catch((err) => Promise.reject(err));
+    try {
+      const response = await Categories.deleteMany();
+
+      if (!response) {
+        throw new ApiErrorHandler(
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "Delete all categories failed",
+        );
+      }
+      if (response.deletedCount === 0) {
+        throw new ApiErrorHandler(
+          StatusCodes.NOT_FOUND,
+          "Categories not found",
+        );
+      }
+
+      return response;
+    } catch (err) {
+      throw err;
+    }
   },
 };

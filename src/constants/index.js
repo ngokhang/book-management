@@ -1,0 +1,15 @@
+export const BOOK = "Book";
+export const CATEGORY = "Category";
+export const AUTHOR = "Author";
+export const USER = "User";
+export const TOKEN = "Token";
+export const REFRESH_TOKEN = "RefreshToken";
+export const BORROWED = "Borrowed";
+export const RETURNED = "Returned";
+export const SUCCESS = "Success";
+export const FAILED = "Failed";
+export const INVALID = "Invalid";
+export const EXPIRED = "Expired";
+export const NOT_FOUND = "Not found";
+export const CONFLICT = "Conflict";
+export const UNAUTHORIZED = "Unauthorized";

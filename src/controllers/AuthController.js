@@ -1,9 +1,9 @@
 import "dotenv/config";
+import getUserDataFromToken from "../helpers/getUserDataFromToken.js";
+import { response } from "../helpers/response.js";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { AuthServices } from "../services/AuthServices.js";
 import { JwtServices } from "../services/JwtServices.js";
-import { response } from "../helpers/response.js";
-import getAccessToken from "../helpers/getAccessToken.js";
 
 export const AuthController = {
   login: async (req, res, next) => {
@@ -54,7 +54,7 @@ export const AuthController = {
 
     const { exp } = JwtServices.verify(
       refreshToken,
-      process.env.REFRESH_TOKEN_SECRET
+      process.env.REFRESH_TOKEN_SECRET,
     );
     const isExpiredToken = JwtServices.isTokenExpired(exp);
     if (isExpiredToken) return next(new ApiErrorHandler(401, "Token expired"));
@@ -66,7 +66,7 @@ export const AuthController = {
           accessTokenSecret: process.env.ACCESS_TOKEN_SECRET,
           refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET,
         },
-        JwtServices.decode(accessToken)
+        JwtServices.decode(accessToken),
       );
 
     res.cookie("refresh_token", newRefreshToken, {
@@ -80,11 +80,7 @@ export const AuthController = {
     });
   },
   changePassword: async (req, res, next) => {
-    const accessToken = getAccessToken(req);
-    const { email } = JwtServices.verify(
-      accessToken,
-      process.env.ACCESS_TOKEN_SECRET
-    );
+    const { email } = getUserDataFromToken(req);
     const { oldPassword, newPassword, confirmPassword } = req.body;
 
     if (!email) return next(new ApiErrorHandler(401, "Unauthorized access"));
@@ -96,7 +92,7 @@ export const AuthController = {
       confirmPassword,
     })
       .then((result) =>
-        response(res, 200, "Password changed successfully", result)
+        response(res, 200, "Password changed successfully", result),
       )
       .catch((err) => {
         next(err);
