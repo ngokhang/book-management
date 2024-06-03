@@ -6,6 +6,7 @@ import compression from "compression";
 import { router } from "./src/router/index.js";
 import { ErrorHandlerMiddleware } from "./src/middlewares/ErrorHandler.js";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(morgan("dev"));
 app.use(compression());
 app.use(cookieParser());
 
+app.use(cors());
 app.use("/api", router);
 app.use(ErrorHandlerMiddleware);
 
