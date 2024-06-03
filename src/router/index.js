@@ -8,6 +8,7 @@ import { schemas } from "../validator_schema/index.js";
 import { CategoryController } from "../controllers/CategoryController.js";
 import { BookController } from "../controllers/BookController.js";
 import { utils } from "../utils/index.js";
+import { OrderController } from "../controllers/OderController.js";
 
 export const router = express.Router();
 
@@ -20,27 +21,27 @@ router
   );
 router
   .route("/user/:id")
-  .get([AuthenticatedMiddleware()], UserController.get)
+  .get([AuthenticatedMiddleware()], utils.asyncHandler(UserController.get))
   .put(
     [AuthenticatedMiddleware(), validateData(schemas.updateUserSchema)],
-    UserController.update,
+    utils.asyncHandler(UserController.update),
   )
   .delete(
     [AuthenticatedMiddleware(), CheckIsAdminMiddleware()],
-    UserController.delete,
+    utils.asyncHandler(UserController.delete),
   );
 
 // Auth routers
 router.post(
   "/register",
   validateData(schemas.createNewUserSchema),
-  AuthController.register,
+  utils.asyncHandler(AuthController.register),
 );
 router.post("/login", AuthController.login);
 router.put(
   "/change-password",
   [AuthenticatedMiddleware(), validateData(schemas.changePasswordSchema)],
-  AuthController.changePassword,
+  utils.asyncHandler(AuthController.changePassword),
 );
 
 // Token routers
@@ -102,4 +103,37 @@ router
   .delete(
     CheckIsAdminMiddleware(),
     utils.asyncHandler(BookController.deleteOne),
+  );
+
+// router order for admin
+router
+  .route("/admin/order")
+  .get(
+    [AuthenticatedMiddleware(), CheckIsAdminMiddleware()],
+    utils.asyncHandler(OrderController.getAll),
+  )
+  .post(
+    [
+      AuthenticatedMiddleware(),
+      validateData(schemas.createOrderSchema),
+      CheckIsAdminMiddleware(),
+    ],
+    utils.asyncHandler(OrderController.create),
+  )
+  .patch(
+    [AuthenticatedMiddleware(), validateData(schemas.updateOrderSchema)],
+    utils.asyncHandler(OrderController.update),
+  );
+
+// router order for user
+router
+  .route("/order")
+  .get(AuthenticatedMiddleware(), utils.asyncHandler(OrderController.getAll))
+  .post(
+    [AuthenticatedMiddleware(), validateData(schemas.createOrderSchema)],
+    utils.asyncHandler(OrderController.create),
+  )
+  .patch(
+    [AuthenticatedMiddleware(), validateData(schemas.updateOrderSchema)],
+    utils.asyncHandler(OrderController.update),
   );

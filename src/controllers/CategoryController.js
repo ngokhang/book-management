@@ -8,13 +8,21 @@ export const CategoryController = {
       .catch((err) => next(err));
   },
   get: async (req, res, next) => {
-    return await CategoryServices.get(req.params)
-      .then((result) => response(res, 200, "Get A Category", result))
-      .catch((err) => next(err));
+    return response(
+      res,
+      200,
+      "Get Category",
+      await CategoryServices.get(req.params),
+    );
   },
   create: async (req, res, next) => {
     const { categories } = req.body;
-    return response(res, 200, "Category created", { categories });
+    return response(
+      res,
+      200,
+      "Category created",
+      await CategoryServices.create({ categories }),
+    );
   },
   update: async (req, res, next) => {
     const data = req.body;

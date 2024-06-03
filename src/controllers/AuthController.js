@@ -39,11 +39,12 @@ export const AuthController = {
       password,
     };
 
-    return await AuthServices.register(data)
-      .then((result) => response(res, 201, "User created successfully", result))
-      .catch((err) => {
-        next(err);
-      });
+    return response(
+      res,
+      201,
+      "User created successfully",
+      await AuthServices.register(data),
+    );
   },
   refreshToken: async (req, res, next) => {
     const accessToken = req.header("authorization").split(" ")[1];
@@ -85,17 +86,16 @@ export const AuthController = {
 
     if (!email) return next(new ApiErrorHandler(401, "Unauthorized access"));
 
-    return await AuthServices.changePassword({
-      email,
-      oldPassword,
-      newPassword,
-      confirmPassword,
-    })
-      .then((result) =>
-        response(res, 200, "Password changed successfully", result),
-      )
-      .catch((err) => {
-        next(err);
-      });
+    return response(
+      res,
+      200,
+      "Password changed successfully",
+      await AuthServices.changePassword({
+        email,
+        oldPassword,
+        newPassword,
+        confirmPassword,
+      }),
+    );
   },
 };
