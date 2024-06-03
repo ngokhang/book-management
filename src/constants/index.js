@@ -6,6 +6,7 @@ export const TOKEN = "Token";
 export const REFRESH_TOKEN = "RefreshToken";
 export const BORROWED = "Borrowed";
 export const RETURNED = "Returned";
+export const PENDING = "Pending";
 export const SUCCESS = "Success";
 export const FAILED = "Failed";
 export const INVALID = "Invalid";
