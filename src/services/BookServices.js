@@ -90,11 +90,8 @@ export const BookServices = {
     // Storage image to folder uploads
     if (files.thumbnail) {
       const image = files.thumbnail[0];
-      // const fileName = `${Date.now()}-${image.originalname}`;
+      const fileName = `${Date.now()}-${image.originalname}`;
       const mimeType = image.mimetype;
-      const fileName = `${data.name.split(" ").join("-")}.${
-        image.originalname.split(".")[1]
-      }`;
       const path = process.cwd() + "/src/uploads/" + fileName;
 
       fs.writeFileSync(path, image.buffer);
@@ -106,7 +103,6 @@ export const BookServices = {
       );
       data.thumbnail =
         fileUploadedGgDrive.thumbnailLink || "Not found thumbnail";
-      // fs.unlinkSync(path);
     }
 
     const newBook = await Book.create(data);
