@@ -14,7 +14,7 @@ export const BookController = {
     return res.status(200).json(await BookServices.get(req.params));
   },
   create: async (req, res) => {
-    return res.status(201).json(await BookServices.create(req.body));
+    return res.status(201).json(await BookServices.create(req));
   },
   update: async (req, res, next) => {
     const data = { ...req.body, _id: req.params._id };

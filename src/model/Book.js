@@ -1,5 +1,4 @@
 import mongoose, { Schema } from "mongoose";
-// import mongoosePaginate from "mongoose-paginate-v2";
 import mongoosePaginate from "mongoose-aggregate-paginate-v2";
 
 const BookSchema = new Schema({
