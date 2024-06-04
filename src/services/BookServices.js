@@ -1,7 +1,9 @@
-import mongoose from "mongoose";
-import { Book } from "../model/Book.js";
-import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
+import fs from "fs";
 import { StatusCodes } from "http-status-codes";
+import mongoose from "mongoose";
+import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
+import { Book } from "../model/Book.js";
+import { UploadFileServices } from "./UploadFileServices.js";
 
 export const BookServices = {
   getAll: async (data) => {
@@ -69,11 +71,43 @@ export const BookServices = {
     return response[0];
   },
 
-  create: async (data) => {
+  create: async ({
+    body: { name, author, categories, description, thumbnail },
+    files,
+  }) => {
+    const data = {
+      name,
+      author: JSON.parse(author),
+      categories: JSON.parse(categories),
+      description,
+      thumbnail: thumbnail ? thumbnail[0].filename : "12",
+    };
     const isExistedBook = await Book.findOne({ name: data.name });
 
     if (isExistedBook)
       throw new ApiErrorHandler(StatusCodes.CONFLICT, "Book existed");
+
+    // Storage image to folder uploads
+    if (files.thumbnail) {
+      const image = files.thumbnail[0];
+      // const fileName = `${Date.now()}-${image.originalname}`;
+      const mimeType = image.mimetype;
+      const fileName = `${data.name.split(" ").join("-")}.${
+        image.originalname.split(".")[1]
+      }`;
+      const path = process.cwd() + "/src/uploads/" + fileName;
+
+      fs.writeFileSync(path, image.buffer);
+      const fileUploadedGgDrive = await UploadFileServices.uploadFile(
+        fileName,
+        mimeType,
+        path,
+        true,
+      );
+      data.thumbnail =
+        fileUploadedGgDrive.thumbnailLink || "Not found thumbnail";
+      // fs.unlinkSync(path);
+    }
 
     const newBook = await Book.create(data);
 
