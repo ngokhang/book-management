@@ -1,8 +1,8 @@
 import express from "express";
-import { BookController } from "../controllers/BookController.js";
-import { utils } from "../utils/index.js";
-import CheckIsAdminMiddleware from "../middlewares/CheckIsAdminMiddleware.js";
 import multer from "multer";
+import { BookController } from "../controllers/BookController.js";
+import CheckIsAdminMiddleware from "../middlewares/CheckIsAdminMiddleware.js";
+import { utils } from "../utils/index.js";
 
 const BookRouter = express.Router();
 
@@ -23,7 +23,13 @@ BookRouter.route("/")
 
 BookRouter.route("/:_id")
   .get(utils.asyncHandler(BookController.get))
-  .patch(CheckIsAdminMiddleware(), utils.asyncHandler(BookController.update))
+  .patch(
+    [
+      CheckIsAdminMiddleware(),
+      multer().fields([{ name: "thumbnail", maxCount: 1 }]),
+    ],
+    utils.asyncHandler(BookController.update),
+  )
   .delete(
     CheckIsAdminMiddleware(),
     utils.asyncHandler(BookController.deleteOne),

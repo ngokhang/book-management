@@ -44,7 +44,7 @@ export const UploadFileServices = {
         requestBody: {
           name: filename,
           mimeType: mimetype,
-          parents: ["1yH4qR8DCtx3Pyzz2PICjc1QT1Kt8h9I2"],
+          parents: [process.env.PARENT_FOLDER_ID],
         },
         media: {
           mimeType: mimetype,
@@ -63,6 +63,7 @@ export const UploadFileServices = {
 
       return { ...res.data, thumbnailLink, webViewLink, webContentLink };
     } catch (error) {
+      console.error(error);
       throw new ApiErrorHandler(500, "Error when upload file");
     }
   },

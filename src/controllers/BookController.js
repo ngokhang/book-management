@@ -18,7 +18,7 @@ export const BookController = {
   },
   update: async (req, res, next) => {
     const data = { ...req.body, _id: req.params._id };
-    return res.status(201).json(await BookServices.update(data));
+    return res.status(201).json(await BookServices.update(req));
   },
   deleteOne: async (req, res) => {
     return res.status(201).json(await BookServices.deleteOne(req.params));

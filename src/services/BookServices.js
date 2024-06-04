@@ -3,7 +3,6 @@ import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { Book } from "../model/Book.js";
-import { UploadFileServices } from "./UploadFileServices.js";
 
 export const BookServices = {
   getAll: async (data) => {
@@ -91,18 +90,13 @@ export const BookServices = {
     if (files.thumbnail) {
       const image = files.thumbnail[0];
       const fileName = `${Date.now()}-${image.originalname}`;
-      const mimeType = image.mimetype;
       const path = process.cwd() + "/src/uploads/" + fileName;
 
       fs.writeFileSync(path, image.buffer);
-      const fileUploadedGgDrive = await UploadFileServices.uploadFile(
-        fileName,
-        mimeType,
-        path,
-        true,
-      );
-      data.thumbnail =
-        fileUploadedGgDrive.thumbnailLink || "Not found thumbnail";
+
+      data.thumbnail = process.env.DEVELOP_MODE
+        ? `${process.env.DOMAIN_DEV}/src/uploads/${fileName}`
+        : `${process.env.DOMAIN_PROD}/src/uploads/${fileName}`;
     }
 
     const newBook = await Book.create(data);
@@ -116,20 +110,49 @@ export const BookServices = {
     return newBook;
   },
 
-  update: async (data) =>
-    await Book.findOneAndUpdate({ _id: data._id }, data, {
-      new: true,
-    })
-      .then((response) => {
-        if (!response)
-          throw new ApiErrorHandler(StatusCodes.NOT_FOUND, "Book not found");
+  update: async ({
+    body: { name, author, categories, description, thumbnail },
+    files,
+    params: { _id },
+  }) => {
+    const data = {
+      name,
+      author,
+      categories,
+      description,
+      thumbnail,
+    };
 
-        return response;
-      })
-      .catch((err) => {
-        throw err;
-      }),
+    //  Storage image to folder uploads
+    if (files.thumbnail) {
+      const image = files.thumbnail[0];
+      const fileName = `${Date.now()}-${image.originalname}`;
+      const path = process.cwd() + "/src/uploads/" + fileName;
 
+      fs.writeFileSync(path, image.buffer);
+      data.thumbnail = process.env.DEVELOP_MODE
+        ? `${process.env.DOMAIN_DEV}/src/uploads/${fileName}`
+        : `${process.env.DOMAIN_PROD}/src/uploads/${fileName}`;
+    }
+
+    const response = await Book.findOneAndUpdate(
+      { _id: _id },
+      {
+        ...data,
+        author: JSON.parse(data.author),
+        categories: JSON.parse(data.categories),
+      },
+      {
+        new: true,
+      },
+    );
+
+    if (!response) {
+      throw new ApiErrorHandler(StatusCodes.NOT_FOUND, "Book not found");
+    }
+
+    return response;
+  },
   deleteOne: async (data) => {
     const response = await Book.findByIdAndDelete(data._id);
     if (!response) {
