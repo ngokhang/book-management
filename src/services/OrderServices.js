@@ -1,81 +1,60 @@
 import moment from "moment";
 import { ObjectId } from "mongodb";
-import { BORROWED, PENDING } from "../constants/index.js";
+import { BORROWED, PENDING, RETURNED } from "../constants/index.js";
 import getUserDataFromToken from "../helpers/getUserDataFromToken.js";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { Order } from "../model/Order.js";
+import { Author } from "../model/Author.js";
+import { Categories } from "../model/Categories.js";
 
 export const OrderServices = {
   getAll: async (req) => {
     const { _page, _limit } = req;
     const { role, _id } = getUserDataFromToken(req);
 
-    const aggregate = Order.aggregate([
-      {
-        $lookup: {
-          from: "books",
-          localField: "bookId",
-          foreignField: "_id",
-          as: "bookInfo",
+    const options = {
+      page: _page,
+      limit: _limit,
+      populate: {
+        path: "bookId",
+        populate: {
+          path: "author",
+          model: Author,
+        },
+        populate: {
+          path: "categories",
+          model: Categories,
         },
       },
+    };
+
+    const aggregate = await Order.aggregate([
       {
-        $lookup: {
-          from: "users",
-          localField: "userId",
-          foreignField: "_id",
-          as: "userInfo",
-        },
-      },
-      {
-        $lookup: {
-          from: "authors",
-          localField: "bookInfo.author",
-          foreignField: "_id",
-          as: "bookInfo.author",
-        },
-      },
-      {
-        $unwind: "$userInfo",
-      },
-      {
-        $unwind: "$bookInfo",
-      },
-      {
-        $match: {
-          "userInfo._id":
-            role === "admin"
-              ? { $ne: ObjectId.createFromHexString(_id) }
-              : ObjectId.createFromHexString(_id),
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          borrowDate: 1,
-          dueDate: 1,
-          status: 1,
-          bookInfo: {
-            name: 1,
-            categories: 1,
-            author: 1,
-          },
-          userInfo: {
-            _id: 1,
-          },
-        },
+        $match: {},
       },
     ]);
 
-    return await Order.aggregatePaginate(aggregate, {
-      page: _page,
-      limit: _limit,
-    })
-      .then((result) => result)
-      .catch((err) => {
-        throw err;
-      });
+    await Order.populate(aggregate, options.populate);
+
+    switch (role) {
+      case "user":
+        return await Order.aggregatePaginate(
+          [{ $match: { userId: ObjectId.createFromHexString(_id) } }],
+          options,
+        )
+          .then((result) => result)
+          .catch((err) => {
+            throw err;
+          });
+      default:
+        return await Order.aggregatePaginate(aggregate, options)
+          .then((result) => result)
+          .catch((err) => {
+            throw err;
+          });
+    }
   },
+
   create: async ({
     userId,
     bookId,
@@ -104,6 +83,8 @@ export const OrderServices = {
     if (countDayBorrow > 7) {
       throw new ApiErrorHandler(400, "Only 7 days allowed to borrow a book");
     }
+    if (newBorrowDate.isBefore(moment()))
+      throw new ApiErrorHandler(400, "Borrow date must be in the future");
 
     const orderExisting = await Order.find({
       bookId,
@@ -157,6 +138,7 @@ export const OrderServices = {
       throw new ApiErrorHandler(409, "Book is not available");
     }
   },
+
   update: async (req) => {
     const { status, userId, bookId, borrowDate, _id: orderId } = req.body;
     const { _id, role } = getUserDataFromToken(req);
@@ -185,5 +167,127 @@ export const OrderServices = {
     if (!order) throw new ApiErrorHandler(404, "Order not found");
 
     return order;
+  },
+
+  getOrderInMonth: async ({ query: { _page, _limit, month } }) => {
+    const options = {
+      page: _page || 1,
+      limit: _limit || 10,
+    };
+
+    return await Order.paginate(
+      {
+        createdAt: {
+          $gte: new Date(
+            new Date().getFullYear(),
+            month - 1 || new Date().getMonth(),
+            1,
+          ),
+          $lt: new Date(
+            new Date().getFullYear(),
+            month || new Date().getMonth() + 1,
+            1,
+          ),
+        },
+      },
+      options,
+    )
+      .then((result) => result)
+      .catch((err) => {
+        throw err;
+      });
+  },
+
+  getUserOrders: async (req) => {
+    const {
+      params: { _userId },
+      query: { _page, _limit, _month },
+    } = req;
+
+    const { role, _id } = getUserDataFromToken(req);
+
+    switch (role) {
+      case "user":
+        if (_userId !== _id) throw new ApiErrorHandler(403, "Forbidden");
+        break;
+
+      default:
+        break;
+    }
+
+    return await Order.paginate(
+      {
+        userId: _userId,
+        createdAt: {
+          $gte: new Date(
+            new Date().getFullYear(),
+            _month - 1 || new Date().getMonth(),
+            1,
+          ),
+          $lt: new Date(
+            new Date().getFullYear(),
+            _month || new Date().getMonth() + 1,
+            1,
+          ),
+        },
+      },
+      {
+        page: _page || 1,
+        limit: _limit || 10,
+      },
+    );
+  },
+  getMostBorrowedBook: async ({ query: { _page, _limit } }) => {
+    return await Order.aggregate([
+      {
+        $group: {
+          _id: "$bookId",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { count: -1 },
+      },
+      {
+        $limit: Number.parseInt(_limit) || 10,
+      },
+      {
+        $skip: (Number.parseInt(_page) - 1) * Number.parseInt(_limit) || 0,
+      },
+      {
+        $lookup: {
+          from: "books",
+          localField: "_id",
+          foreignField: "_id",
+          as: "book",
+        },
+      },
+      {
+        $unwind: "$book",
+      },
+      {
+        $lookup: {
+          from: "authors",
+          localField: "book.author",
+          foreignField: "_id",
+          as: "book.author",
+        },
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "book.categories",
+          foreignField: "_id",
+          as: "book.categories",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          count: 1,
+          book: 1,
+        },
+      },
+    ]);
   },
 };

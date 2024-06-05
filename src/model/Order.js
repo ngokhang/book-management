@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import mongoosePaginate from "mongoose-aggregate-paginate-v2";
 import { BORROWED, RETURNED, PENDING } from "../constants/index.js";
+import autopopulate from "mongoose-autopopulate";
+import paginatePlugin from "./plugins/paginate.js";
 
 const OrderSchema = new Schema(
   {
@@ -13,6 +14,7 @@ const OrderSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Book",
       required: true,
+      autopopulate: true,
     },
     borrowDate: {
       type: Schema.Types.Date,
@@ -32,8 +34,8 @@ const OrderSchema = new Schema(
     timestamps: true,
     collection: "order",
   },
-);
-
-OrderSchema.plugin(mongoosePaginate);
+)
+  .plugin(autopopulate)
+  .plugin(paginatePlugin);
 
 export const Order = mongoose.model("Order", OrderSchema);

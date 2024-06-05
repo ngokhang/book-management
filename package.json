@@ -27,6 +27,7 @@
     "moment": "2.30.1",
     "mongoose": "^8.4.0",
     "mongoose-aggregate-paginate-v2": "^1.0.7",
+    "mongoose-autopopulate": "^1.1.0",
     "mongoose-delete": "^1.0.2",
     "mongoose-paginate-v2": "^1.8.2",
     "morgan": "^1.10.0",

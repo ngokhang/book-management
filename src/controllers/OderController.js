@@ -10,8 +10,8 @@ export const OrderController = {
       await OrderServices.getAll(req),
     );
   },
-  get: async (req, res) =>
-    response(res, 200, "Get order", await OrderServices.getAll(req.query)),
+  getUserOrders: async (req, res) =>
+    response(res, 200, "Get order", await OrderServices.getUserOrders(req)),
   create: async (req, res) => {
     return response(
       res,
@@ -22,5 +22,23 @@ export const OrderController = {
   },
   update: async (req, res) => {
     return response(res, 200, "Update order", await OrderServices.update(req));
+  },
+
+  getPopularOrderInMonth: async (req, res) => {
+    return response(
+      res,
+      200,
+      "Get orders of month",
+      await OrderServices.getOrderInMonth(req),
+    );
+  },
+
+  getMostBorrowed: async (req, res) => {
+    return response(
+      res,
+      200,
+      "Get most borrowed",
+      await OrderServices.getMostBorrowedBook(req),
+    );
   },
 };

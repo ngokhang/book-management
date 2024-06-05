@@ -39,4 +39,19 @@ OrderRouter.route("/")
     utils.asyncHandler(OrderController.update),
   );
 
+// router for get popular order in month
+OrderRouter.route("/month").get(
+  utils.asyncHandler(OrderController.getPopularOrderInMonth),
+);
+
+// router for get most borrowed book
+OrderRouter.route("/most-borrowed").get(
+  utils.asyncHandler(OrderController.getMostBorrowed),
+);
+
+// router for get user orders
+OrderRouter.route("/:_userId").get(
+  utils.asyncHandler(OrderController.getUserOrders),
+);
+
 export default OrderRouter;

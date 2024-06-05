@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import mongoosePaginate from "mongoose-aggregate-paginate-v2";
+import autopopulate from "mongoose-autopopulate";
 
 const BookSchema = new Schema({
   name: {
@@ -11,7 +12,8 @@ const BookSchema = new Schema({
     {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: "Author",
+      ref: "author",
+      autopopulate: true,
     },
   ],
   categories: [
@@ -19,6 +21,7 @@ const BookSchema = new Schema({
       type: Schema.Types.ObjectId,
       ref: "Categories",
       required: true,
+      autopopulate: true,
     },
   ],
   description: {
@@ -30,8 +33,8 @@ const BookSchema = new Schema({
     type: String,
     required: true,
   },
-});
-
-BookSchema.plugin(mongoosePaginate);
+})
+  .plugin(autopopulate)
+  .plugin(mongoosePaginate);
 
 export const Book = mongoose.model("Book", BookSchema);
