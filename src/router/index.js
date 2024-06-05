@@ -8,6 +8,7 @@ import BookRouter from "./book.js";
 import CategoryRouter from "./categories.js";
 import OrderRouter from "./order.js";
 import UserRouter from "./user.js";
+import AuthorRouter from "./author.js";
 
 export const router = express.Router();
 
@@ -31,3 +32,4 @@ router.use("/user", UserRouter);
 router.use("/category", CategoryRouter);
 router.use("/book", BookRouter);
 router.use("/order", OrderRouter);
+router.use("/author", AuthorRouter);
