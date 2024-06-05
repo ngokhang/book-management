@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import mongoosePaginate from "mongoose-paginate-v2";
+import paginatePlugin from "./plugins/paginate.js";
 
 const CategoriesSchema = new Schema({
   name: {
@@ -13,7 +13,7 @@ const CategoriesSchema = new Schema({
   },
 });
 
-CategoriesSchema.plugin(mongoosePaginate);
+CategoriesSchema.plugin(paginatePlugin);
 CategoriesSchema.index({ name: 1 }, { unique: true });
 
 export const Categories = mongoose.model("Categories", CategoriesSchema);

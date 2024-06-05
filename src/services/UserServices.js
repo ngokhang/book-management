@@ -2,8 +2,8 @@ import { User } from "../model/UserSchema.js";
 import bcrypt from "bcrypt";
 
 export const UserServices = {
-  getAllUser: async () => {
-    return await User.find();
+  getAllUser: async ({ query: { _page, _limit } }) => {
+    return await User.paginate({}, { page: _page, limit: _limit });
   },
   createUser: async (data) => {
     const existingUser = await User.findOne({ email: data.email });

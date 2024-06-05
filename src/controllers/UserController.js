@@ -3,7 +3,7 @@ import { UserServices } from "../services/UserServices.js";
 
 export const UserController = {
   getAll: async (req, res) => {
-    const users = await UserServices.getAllUser();
+    const users = await UserServices.getAllUser(req);
     return res.json({
       message: "Get all user",
       data: users,

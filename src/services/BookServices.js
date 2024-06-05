@@ -6,68 +6,16 @@ import { Book } from "../model/Book.js";
 
 export const BookServices = {
   getAll: async (data) => {
-    const aggregate = Book.aggregate([
-      { $unwind: "$categories" },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "categories",
-          foreignField: "_id",
-          as: "categories",
-        },
-      },
-      {
-        $lookup: {
-          from: "authors",
-          localField: "author",
-          foreignField: "_id",
-          as: "author",
-        },
-      },
-    ]);
-
-    return await Book.aggregatePaginate(aggregate, {
-      page: data._page,
-      limit: data._limit,
-    })
-      .then((result) => result)
-      .catch((err) => {
-        throw err;
-      });
+    return await Book.paginate({}, { page: data._page, limit: data._limit });
   },
 
   get: async (data) => {
-    const aggregate = [
-      {
-        $match: {
-          _id: mongoose.Types.ObjectId.createFromHexString(data._id),
-        },
-      },
-      { $unwind: "$categories" },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "categories",
-          foreignField: "_id",
-          as: "categories",
-        },
-      },
-      {
-        $lookup: {
-          from: "authors",
-          localField: "author",
-          foreignField: "_id",
-          as: "author",
-        },
-      },
-    ];
+    const response = await Book.findById(data._id);
 
-    const response = await Book.aggregate(aggregate);
-
-    if (!response.length)
+    if (!response)
       throw new ApiErrorHandler(StatusCodes.NOT_FOUND, "Book not found");
 
-    return response[0];
+    return response;
   },
 
   create: async ({

@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import mongoosePaginate from "mongoose-aggregate-paginate-v2";
+// import mongoosePaginate from "mongoose-aggregate-paginate-v2";
+import paginatePlugin from "./plugins/paginate.js";
 import autopopulate from "mongoose-autopopulate";
 
 const BookSchema = new Schema({
@@ -35,6 +36,6 @@ const BookSchema = new Schema({
   },
 })
   .plugin(autopopulate)
-  .plugin(mongoosePaginate);
+  .plugin(paginatePlugin);
 
 export const Book = mongoose.model("Book", BookSchema);

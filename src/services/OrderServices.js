@@ -1,11 +1,8 @@
 import moment from "moment";
-import { ObjectId } from "mongodb";
-import { BORROWED, PENDING, RETURNED } from "../constants/index.js";
+import { BORROWED, PENDING } from "../constants/index.js";
 import getUserDataFromToken from "../helpers/getUserDataFromToken.js";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { Order } from "../model/Order.js";
-import { Author } from "../model/Author.js";
-import { Categories } from "../model/Categories.js";
 
 export const OrderServices = {
   getAll: async (req) => {
@@ -15,39 +12,17 @@ export const OrderServices = {
     const options = {
       page: _page,
       limit: _limit,
-      populate: {
-        path: "bookId",
-        populate: {
-          path: "author",
-          model: Author,
-        },
-        populate: {
-          path: "categories",
-          model: Categories,
-        },
-      },
     };
-
-    const aggregate = await Order.aggregate([
-      {
-        $match: {},
-      },
-    ]);
-
-    await Order.populate(aggregate, options.populate);
 
     switch (role) {
       case "user":
-        return await Order.aggregatePaginate(
-          [{ $match: { userId: ObjectId.createFromHexString(_id) } }],
-          options,
-        )
+        return await Order.paginate({ userId: _id }, options)
           .then((result) => result)
           .catch((err) => {
             throw err;
           });
       default:
-        return await Order.aggregatePaginate(aggregate, options)
+        return await Order.paginate({}, options)
           .then((result) => result)
           .catch((err) => {
             throw err;
@@ -237,6 +212,7 @@ export const OrderServices = {
       },
     );
   },
+
   getMostBorrowedBook: async ({ query: { _page, _limit } }) => {
     return await Order.aggregate([
       {
