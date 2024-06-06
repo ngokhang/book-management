@@ -1,7 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import paginatePlugin from "./plugins/paginate.js";
 import autopopulate from "mongoose-autopopulate";
-import searchPlugin from "./plugins/search.js";
 
 const BookSchema = new Schema({
   name: {
@@ -36,7 +35,6 @@ const BookSchema = new Schema({
   },
 })
   .plugin(autopopulate)
-  .plugin(paginatePlugin)
-  .plugin(searchPlugin, { fields: ["name", "categories", "author"] });
+  .plugin(paginatePlugin);
 
 export const Book = mongoose.model("Book", BookSchema);
