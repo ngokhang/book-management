@@ -16,11 +16,11 @@ UserRouter.route("/").get(
 UserRouter.route("/:id")
   .get([AuthenticatedMiddleware()], utils.asyncHandler(UserController.get))
   .put(
-    [AuthenticatedMiddleware(), validateData(schemas.updateUserSchema)],
+    [AuthenticatedMiddleware(), validateData(schemas.user.update)],
     utils.asyncHandler(UserController.update),
   )
   .delete(
-    [AuthenticatedMiddleware(), CheckIsAdminMiddleware()],
+    [CheckIsAdminMiddleware()],
     utils.asyncHandler(UserController.delete),
   );
 

@@ -17,13 +17,13 @@ OrderRouter.route("/admin")
   .post(
     [
       AuthenticatedMiddleware(),
-      validateData(schemas.createOrderSchema),
+      validateData(schemas.order.create),
       CheckIsAdminMiddleware(),
     ],
     utils.asyncHandler(OrderController.create),
   )
   .patch(
-    [AuthenticatedMiddleware(), validateData(schemas.updateOrderSchema)],
+    [AuthenticatedMiddleware(), validateData(schemas.order.update)],
     utils.asyncHandler(OrderController.update),
   );
 
@@ -31,11 +31,11 @@ OrderRouter.route("/admin")
 OrderRouter.route("/")
   .get(AuthenticatedMiddleware(), utils.asyncHandler(OrderController.getAll))
   .post(
-    [AuthenticatedMiddleware(), validateData(schemas.createOrderSchema)],
+    [AuthenticatedMiddleware(), validateData(schemas.order.create)],
     utils.asyncHandler(OrderController.create),
   )
   .patch(
-    [AuthenticatedMiddleware(), validateData(schemas.updateOrderSchema)],
+    [AuthenticatedMiddleware(), validateData(schemas.order.update)],
     utils.asyncHandler(OrderController.update),
   );
 

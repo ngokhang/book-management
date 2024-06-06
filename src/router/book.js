@@ -17,16 +17,16 @@ const BookRouter = express.Router();
 BookRouter.route("/")
   .get(utils.asyncHandler(BookController.getAll))
   .post(
-    [CheckIsAdminMiddleware(), validateData(schemas.createBookSchema)],
+    [CheckIsAdminMiddleware(), validateData(schemas.book.create)],
     utils.asyncHandler(BookController.create),
   )
   .delete(
-    [CheckIsAdminMiddleware(), validateData(schemas.deleteBookSchema)],
+    [CheckIsAdminMiddleware(), validateData(schemas.book.delete)],
     utils.asyncHandler(BookController.delete),
   );
 
 BookRouter.route("/hide").patch(
-  [CheckIsAdminMiddleware(), validateData(schemas.deleteBookSchema)],
+  [CheckIsAdminMiddleware(), validateData(schemas.book.delete)],
   utils.asyncHandler(BookController.hide),
 );
 
@@ -44,7 +44,7 @@ BookRouter.route("/search").get(
 BookRouter.route("/:_id")
   .get(utils.asyncHandler(BookController.get))
   .patch(
-    [CheckIsAdminMiddleware(), validateData(schemas.updateBookSchema)],
+    [CheckIsAdminMiddleware(), validateData(schemas.book.update)],
     utils.asyncHandler(BookController.update),
   );
 

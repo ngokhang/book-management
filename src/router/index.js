@@ -14,13 +14,13 @@ export const router = express.Router();
 // Auth routers
 router.post(
   "/register",
-  validateData(schemas.createNewUserSchema),
+  validateData(schemas.user.create),
   utils.asyncHandler(AuthController.register),
 );
 router.post("/login", AuthController.login);
 router.put(
   "/change-password",
-  [AuthenticatedMiddleware(), validateData(schemas.changePasswordSchema)],
+  [AuthenticatedMiddleware(), validateData(schemas.auth.changePassword)],
   utils.asyncHandler(AuthController.changePassword),
 );
 
