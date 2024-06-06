@@ -4,11 +4,11 @@ import AuthenticatedMiddleware from "../middlewares/AuthenticatedMiddleware.js";
 import validateData from "../middlewares/ValidateData.js";
 import { utils } from "../utils/index.js";
 import { schemas } from "../validator_schema/index.js";
+import AuthorRouter from "./author.js";
 import BookRouter from "./book.js";
 import CategoryRouter from "./categories.js";
 import OrderRouter from "./order.js";
 import UserRouter from "./user.js";
-import AuthorRouter from "./author.js";
 
 export const router = express.Router();
 

@@ -1,4 +1,5 @@
 import { response } from "../helpers/response.js";
+import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { UserServices } from "../services/UserServices.js";
 
 export const UserController = {
@@ -10,14 +11,7 @@ export const UserController = {
     });
   },
   update: async (req, res, next) => {
-    const { id } = req.params;
-
-    return resposne(
-      res,
-      200,
-      "Update user",
-      await UserServices.update({ _id: id }, req.body),
-    );
+    return response(res, 200, "Update user", await UserServices.update(req));
   },
   delete: async (req, res, next) => {
     const { id } = req.params;
@@ -31,7 +25,7 @@ export const UserController = {
   get: async (req, res, next) => {
     const { id } = req.params;
     const user = await UserServices.getUserByCondition({ _id: id });
-    if (!user) return next(new Error("User not found"));
+    if (!user) return next(new ApiErrorHandler(404, "User not found"));
 
     return response(res, 200, "Get user", user);
   },

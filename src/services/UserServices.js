@@ -1,3 +1,4 @@
+import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { User } from "../model/UserSchema.js";
 import bcrypt from "bcrypt";
 
@@ -14,11 +15,16 @@ export const UserServices = {
       .then((res) => res)
       .catch((err) => err);
   },
-  getUserByCondition: async (params) => {
-    return await User.findOne({ ...params })
-      .exec()
-      .then((res) => res)
-      .catch((err) => err);
+  getUserByCondition: async ({ _id }) => {
+    try {
+      const userExisting = await User.findOne({ _id });
+
+      if (!userExisting) throw new ApiErrorHandler(404, "User not found");
+
+      return userExisting;
+    } catch (error) {
+      throw error;
+    }
   },
   delete: async (params) => {
     const user = await User.findOne({ ...params });
@@ -29,13 +35,15 @@ export const UserServices = {
       .then((res) => res)
       .catch((err) => err);
   },
-  update: async (params, data) => {
-    const user = await User.findOne({ ...params });
+  update: async ({ params: { _id }, body }) => {
+    const user = await User.findOne({ _id });
     if (!user) throw new Error("User invalid");
 
-    return await User.updateOne({ ...params }, { ...data })
+    return await User.updateOne({ _id }, { body })
       .exec()
       .then((res) => res)
-      .catch((err) => err);
+      .catch((err) => {
+        throw err;
+      });
   },
 };

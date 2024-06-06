@@ -1,8 +1,10 @@
 import fs from "fs";
 import { StatusCodes } from "http-status-codes";
-import mongoose from "mongoose";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
+import { Author } from "../model/Author.js";
 import { Book } from "../model/Book.js";
+import { utils } from "../utils/index.js";
+import { Categories } from "../model/Categories.js";
 
 export const BookServices = {
   getAll: async (data) => {
@@ -22,40 +24,54 @@ export const BookServices = {
     body: { name, author, categories, description, thumbnail },
     files,
   }) => {
-    const data = {
-      name,
-      author: JSON.parse(author),
-      categories: JSON.parse(categories),
-      description,
-      thumbnail: thumbnail ? thumbnail[0].filename : "12",
-    };
-    const isExistedBook = await Book.findOne({ name: data.name });
+    try {
+      const data = {
+        name,
+        author,
+        categories,
+        description,
+        thumbnail: thumbnail ? thumbnail[0].filename : "12",
+      };
+      const existedAuthor = await Author.findOne({ name: data.author }).lean();
+      const existedCategories = await Categories.findOne({
+        name: data.categories,
+      }).lean();
+      const existedBook = await Book.findOne({ name: data.name }).lean();
 
-    if (isExistedBook)
-      throw new ApiErrorHandler(StatusCodes.CONFLICT, "Book existed");
+      if (!existedAuthor) {
+        const newAuthor = await Author.create({ name: data.author });
+        data.author = newAuthor._id;
+      } else {
+        data.author = existedAuthor._id;
+      }
 
-    // Storage image to folder uploads
-    if (files.thumbnail) {
-      const image = files.thumbnail[0];
-      const fileName = `${Date.now()}-${image.originalname}`;
-      const path = process.cwd() + "/src/uploads/" + fileName;
+      if (!existedCategories) {
+        const newCategories = await Categories.create({
+          name: data.categories,
+        });
+        data.categories = newCategories._id;
+      } else {
+        data.categories = existedCategories._id;
+      }
 
-      fs.writeFileSync(path, image.buffer);
+      if (existedBook) {
+        throw new ApiErrorHandler(StatusCodes.CONFLICT, "Book existed");
+      }
 
-      data.thumbnail = process.env.DEVELOP_MODE
-        ? `${process.env.DOMAIN_DEV}/src/uploads/${fileName}`
-        : `${process.env.DOMAIN_PROD}/src/uploads/${fileName}`;
+      utils.storageThumbnail(files, data);
+      const newBook = await Book.create(data);
+
+      if (!newBook) {
+        throw new ApiErrorHandler(
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "Create book failed",
+        );
+      }
+
+      return newBook;
+    } catch (error) {
+      throw error;
     }
-
-    const newBook = await Book.create(data);
-
-    if (!newBook)
-      throw new ApiErrorHandler(
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Create book failed",
-      );
-
-    return newBook;
   },
 
   update: async ({
@@ -63,43 +79,71 @@ export const BookServices = {
     files,
     params: { _id },
   }) => {
-    const data = {
-      name,
-      author,
-      categories,
-      description,
-      thumbnail,
-    };
+    try {
+      const data = {
+        name,
+        author,
+        categories,
+        description,
+        thumbnail: thumbnail ? thumbnail[0].filename : "12",
+      };
+      const existedAuthor = await Author.findOne({ name: data.author }).lean();
+      const existedCategories = await Categories.findOne({
+        name: data.categories,
+      }).lean();
+      const existedBook = await Book.findOne({ _id }).lean();
 
-    //  Storage image to folder uploads
-    if (files.thumbnail) {
-      const image = files.thumbnail[0];
-      const fileName = `${Date.now()}-${image.originalname}`;
-      const path = process.cwd() + "/src/uploads/" + fileName;
+      if (!existedAuthor) {
+        const newAuthor = await Author.create({ name: data.author });
+        data.author = newAuthor._id;
+      } else {
+        data.author = existedAuthor._id;
+      }
 
-      fs.writeFileSync(path, image.buffer);
-      data.thumbnail = process.env.DEVELOP_MODE
-        ? `${process.env.DOMAIN_DEV}/src/uploads/${fileName}`
-        : `${process.env.DOMAIN_PROD}/src/uploads/${fileName}`;
+      if (!existedCategories) {
+        const newCategories = await Categories.create({
+          name: data.categories,
+        });
+        data.categories = newCategories._id;
+      } else {
+        data.categories = existedCategories._id;
+      }
+
+      if (!existedBook) {
+        throw new ApiErrorHandler(StatusCodes.NOT_FOUND, "Book not found");
+      }
+
+      const isNewThumbnail = utils.storageThumbnail(files, data);
+      if (isNewThumbnail) {
+        const oldThumbnail = existedBook.thumbnail;
+        const path =
+          process.cwd() + "/src/uploads/" + oldThumbnail.split("/").pop();
+        fs.unlinkSync(path);
+        const updatedBook = await Book.updateOne({ _id }, data, { new: true });
+        if (!updatedBook) {
+          throw new ApiErrorHandler(
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            "Update book failed",
+          );
+        }
+
+        return updatedBook;
+      } else {
+        delete data.thumbnail;
+        const updatedBook = await Book.updateOne({ _id }, data, { new: true });
+
+        if (!updatedBook) {
+          throw new ApiErrorHandler(
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            "Update book failed",
+          );
+        }
+
+        return updatedBook;
+      }
+    } catch (error) {
+      throw error;
     }
-
-    const response = await Book.findOneAndUpdate(
-      { _id: _id },
-      {
-        ...data,
-        author: JSON.parse(data.author),
-        categories: JSON.parse(data.categories),
-      },
-      {
-        new: true,
-      },
-    );
-
-    if (!response) {
-      throw new ApiErrorHandler(StatusCodes.NOT_FOUND, "Book not found");
-    }
-
-    return response;
   },
   deleteOne: async (data) => {
     const response = await Book.findByIdAndDelete(data._id);
