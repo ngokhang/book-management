@@ -1,39 +1,47 @@
 import mongoose, { Schema } from "mongoose";
-import paginatePlugin from "./plugins/paginate.js";
 import autopopulate from "mongoose-autopopulate";
+import paginatePlugin from "./plugins/paginate.js";
 
-const BookSchema = new Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  author: [
-    {
-      type: Schema.Types.ObjectId,
+const BookSchema = new Schema(
+  {
+    name: {
+      type: String,
       required: true,
-      ref: "author",
-      autopopulate: true,
+      trim: true,
     },
-  ],
-  categories: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "Categories",
+    author: {
+      type: String,
       required: true,
-      autopopulate: true,
     },
-  ],
-  description: {
-    type: String,
-    trim: true,
-    default: "",
+    categories: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Categories",
+        required: true,
+        autopopulate: true,
+      },
+    ],
+    description: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    thumbnail: {
+      type: String,
+    },
+    isPublished: {
+      type: Boolean,
+      default: true,
+    },
+    quantity: {
+      type: Number,
+      default: 10,
+    },
   },
-  thumbnail: {
-    type: String,
-    required: true,
+  {
+    timestamps: true,
   },
-})
+)
   .plugin(autopopulate)
   .plugin(paginatePlugin);
 

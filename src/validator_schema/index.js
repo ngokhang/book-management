@@ -1,11 +1,14 @@
 import Joi from "joi";
+import { REGEX_NAME } from "../constants/index.js";
 
 export const schemas = {
   createNewUserSchema: Joi.object().keys({
     firstName: Joi.string()
+      .regex(REGEX_NAME, "human name")
       .required()
       .messages({ "any.required": "First name is required" }),
     lastName: Joi.string()
+      .regex(REGEX_NAME, "human name")
       .required()
       .messages({ "any.required": "Last name is required" }),
     email: Joi.string().email().required(),
@@ -13,8 +16,8 @@ export const schemas = {
   }),
 
   updateUserSchema: Joi.object().keys({
-    firstName: Joi.string(),
-    lastName: Joi.string(),
+    firstName: Joi.string().regex(REGEX_NAME, "human name"),
+    lastName: Joi.string().regex(REGEX_NAME, "human name"),
     email: Joi.string().email(),
   }),
 
@@ -49,18 +52,24 @@ export const schemas = {
 
   createBookSchema: Joi.object().keys({
     name: Joi.string().required(),
-    categories: Joi.array().items(Joi.string()).required(),
-    author: Joi.array().items(Joi.string()).required(),
+    categories: Joi.array().items(Joi.string().hex().length(24)).required(),
+    author: Joi.string().regex(REGEX_NAME, "human name").required(),
     description: Joi.string(),
-    thumbnail: Joi.string().required(),
+    thumbnail: Joi.string(),
+    isPublished: Joi.boolean().default(true),
   }),
 
   updateBookSchema: Joi.object().keys({
-    name: Joi.string().required().min(3),
-    categories: Joi.array().items(Joi.string()).min(1).required(),
-    author: Joi.array().items(Joi.string()).min(1).required(),
+    name: Joi.string().min(1),
+    categories: Joi.array().items(Joi.string().hex().length(24)).min(1),
+    author: Joi.string().regex(REGEX_NAME, "human name"),
     description: Joi.string(),
-    thumbnail: Joi.string().required(),
+    thumbnail: Joi.string(),
+    isPublished: Joi.boolean(),
+  }),
+
+  deleteBookSchema: Joi.object().keys({
+    arrayId: Joi.array().items(Joi.string().hex().length(24)),
   }),
 
   createAuthorSchema: Joi.object().keys({
@@ -68,13 +77,13 @@ export const schemas = {
   }),
 
   updateAuthorSchema: Joi.object().keys({
-    name: Joi.string().required(),
+    name: Joi.string(),
   }),
 
   updateOrderSchema: Joi.object().keys({
-    bookId: Joi.string().required(),
-    status: Joi.string().required(),
-    borrowDate: Joi.date().required(),
-    _id: Joi.string().required(),
+    bookId: Joi.string().hex().length(24),
+    status: Joi.string(),
+    borrowDate: Joi.date(),
+    _id: Joi.string(),
   }),
 };

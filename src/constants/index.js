@@ -14,3 +14,6 @@ export const EXPIRED = "Expired";
 export const NOT_FOUND = "Not found";
 export const CONFLICT = "Conflict";
 export const UNAUTHORIZED = "Unauthorized";
+
+export const REGEX_NAME =
+  /^[a-zA-ZÀ-ỹà-ỹ\u00C0-\u017F\u1E00-\u1EFF\u0100-\u024F\u0250-\u02AF\u2C60-\u2C7F\uA720-\uA7FF\u0400-\u04FF]+(?:[-\s'][a-zA-ZÀ-ỹà-ỹ\u00C0-\u017F\u1EFF\u0100-\u024F\u0250-\u02AF\u2C60-\u2C7F\uA720-\uA7FF\u0400-\u04FF]+)*$/;

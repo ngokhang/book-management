@@ -1,32 +1,71 @@
-import { BOOK } from "../constants/index.js";
-import message from "../helpers/message.js";
+import "dotenv/config";
+import getUserDataFromToken from "../helpers/getUserDataFromToken.js";
 import { response } from "../helpers/response.js";
 import { BookServices } from "../services/BookServices.js";
 
 export const BookController = {
   getAll: async (req, res, next) => {
-    return await BookServices.getAll(req)
-      .then((result) => response(res, 200, message("Get all", BOOK), result))
-      .catch((err) => next(err));
+    const { page, limit } = req.query;
+    let role = null;
+
+    if (req.header("Authorization")) {
+      const { role: userRole } = getUserDataFromToken(req);
+      role = userRole;
+    }
+
+    return response(
+      res,
+      200,
+      "Get all books",
+      await BookServices.getAll({ page, limit, role }),
+    );
   },
 
   get: async (req, res, next) => {
-    return res.status(200).json(await BookServices.get(req.params));
+    const { _id: bookId } = req.params;
+    let role = null;
+
+    if (req.header("Authorization")) {
+      const { role: userRole } = getUserDataFromToken(req);
+      role = userRole;
+    }
+
+    return response(
+      res,
+      200,
+      "Get A Book",
+      await BookServices.get({ bookId, role }),
+    );
   },
+
   create: async (req, res) => {
-    return res.status(201).json(await BookServices.create(req));
+    const bookData = {
+      ...req.body,
+      thumbnail: process.env.DEVELOP_MODE
+        ? process.env.DOMAIN_DEV + "/src/uploads/default.png"
+        : process.env.DOMAIN_PROD + "/src/uploads/default.png",
+    };
+    const files = req.files;
+
+    return res.status(201).json(await BookServices.create({ bookData, files }));
   },
+
   update: async (req, res, next) => {
-    const data = { ...req.body, _id: req.params._id };
-    return res.status(201).json(await BookServices.update(req));
+    const bookData = { ...req.body };
+    const bookId = req.params._id;
+
+    return res
+      .status(201)
+      .json(await BookServices.update({ bookData, bookId }));
   },
-  deleteOne: async (req, res) => {
-    return res.status(201).json(await BookServices.deleteOne(req.params));
+
+  delete: async (req, res, next) => {
+    const { arrayId } = req.body;
+    return res.status(200).json(await BookServices.delete(arrayId));
   },
-  deleteMany: async (req, res, next) => {
-    return res.status(200).json(await BookServices.deleteOne(req.params));
-  },
-  deleteAll: async (req, res, next) => {
-    return res.status(200).json(await BookServices.deleteAll());
+
+  hide: async (req, res, next) => {
+    const { arrayId } = req.body;
+    return res.status(200).json(await BookServices.hide(arrayId));
   },
 };
