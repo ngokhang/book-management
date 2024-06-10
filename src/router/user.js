@@ -24,4 +24,9 @@ UserRouter.route("/:id")
     utils.asyncHandler(UserController.delete),
   );
 
+UserRouter.route("/:id/orders").get(
+  [AuthenticatedMiddleware(), validateData(schemas.user.getOrders)],
+  UserController.getOrders,
+);
+
 export default UserRouter;

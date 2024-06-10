@@ -1,6 +1,6 @@
+import "dotenv/config";
 import jwt from "jsonwebtoken";
 import { utils } from "../utils/index.js";
-import "dotenv/config";
 
 export const JwtServices = {
   sign: (data, secret, expiresIn) => {
@@ -12,7 +12,7 @@ export const JwtServices = {
   decode: (token) => {
     return jwt.decode(token);
   },
-  refreshToken: (refresh_token, data) => {
+  refreshToken: async (refresh_token, data) => {
     // Check if refresh token is expired
     const { exp } = jwt.verify(refresh_token, process.env.REFRESH_TOKEN_SECRET);
     const isTokenExpired = utils.checkExpires(exp);

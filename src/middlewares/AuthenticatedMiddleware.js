@@ -16,8 +16,12 @@ export default function AuthenticatedMiddleware() {
       if (Date.now() >= exp * 1000) {
         return next(new ApiErrorHandler(401, "Unauthorized"));
       }
-      if (role !== "admin" && req.params.id && _id !== req.params.id)
+      if (role === "admin") return next();
+      if (req.params.id && _id !== req.params.id)
         return next(new ApiErrorHandler(403, "Forbidden"));
+      const { userId } = req.body;
+      if (userId && userId.toString() !== _id.toString())
+        throw new ApiErrorHandler(403, "Forbidden");
     }
     next();
   };

@@ -1,147 +1,258 @@
-import moment from "moment";
-import { BORROWED, PENDING } from "../constants/index.js";
+import moment from "moment-timezone";
+import mongoose from "mongoose";
+import { BORROWED, RETURNED, TIMEZONE } from "../constants/index.js";
 import getUserDataFromToken from "../helpers/getUserDataFromToken.js";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
+import { Book } from "../model/Book.js";
 import { Order } from "../model/Order.js";
 
 export const OrderServices = {
-  getAll: async (req) => {
-    const { _page, _limit } = req;
-    const { role, _id } = getUserDataFromToken(req);
-
-    const options = {
-      page: _page,
-      limit: _limit,
-    };
-
-    switch (role) {
-      case "user":
-        return await Order.paginate({ userId: _id }, options)
-          .then((result) => result)
-          .catch((err) => {
-            throw err;
-          });
-      default:
-        return await Order.paginate({}, options)
-          .then((result) => result)
-          .catch((err) => {
-            throw err;
-          });
-    }
-  },
-
-  create: async ({
-    userId,
-    bookId,
-    borrowDate,
-    dueDate,
-    status = BORROWED,
-  }) => {
-    const userBorrowedOrder = await Order.findOne({
-      userId: userId,
-      status: BORROWED,
-    }).lean();
-    if (userBorrowedOrder) {
-      throw new ApiErrorHandler(409, "User has borrowed a book");
-    }
-    const orderData = {
-      userId,
-      bookId,
-      dueDate,
-      borrowDate,
-      status,
-    };
-    const newBorrowDate = moment(borrowDate);
-    const newDueDate = moment(dueDate);
-    const countDayBorrow = newDueDate.diff(newBorrowDate, "days");
-
-    if (countDayBorrow > 7) {
-      throw new ApiErrorHandler(400, "Only 7 days allowed to borrow a book");
-    }
-    if (newBorrowDate.isBefore(moment()))
-      throw new ApiErrorHandler(400, "Borrow date must be in the future");
-
-    const orderExisting = await Order.find({
-      bookId,
-    })
-      .sort("createdAt")
-      .lean();
-    const borrowedOrderList = orderExisting.filter(
-      (order) => order.status === BORROWED,
-    );
-    const pendingOrderList = orderExisting.filter(
-      (order) => order.status === PENDING,
-    );
-
-    if (borrowedOrderList.length === 0 && pendingOrderList.length === 0) {
-      return await Order.create(orderData)
-        .then((result) => result)
-        .catch((err) => {
-          throw err;
-        });
-    }
-
-    const lastBorrowedOrder = borrowedOrderList[borrowedOrderList.length - 1];
-    const lastBorrowedOrderDueDate = moment(lastBorrowedOrder.dueDate);
-
-    // Check if the book is available to borrow
-    if (
-      newBorrowDate.isBefore(lastBorrowedOrderDueDate) &&
-      pendingOrderList.length > 0
-    ) {
-      throw new ApiErrorHandler(409, "Book is not available");
-    }
-
-    // Process the new order if the last borrowed order is not returned
-    if (lastBorrowedOrder.status === BORROWED) {
-      if (
-        pendingOrderList.length === 0 &&
-        newBorrowDate.isAfter(moment(lastBorrowedOrder.dueDate))
-      ) {
-        return await Order.create({ ...orderData, status: PENDING })
-          .then((result) => result)
-          .catch((err) => {
-            throw err;
-          });
+  getAll: async ({ page, limit, role, userId }) => {
+    try {
+      if (page < 0 || limit < 0) {
+        throw new ApiErrorHandler(
+          400,
+          "Page and limit must be positive number",
+        );
       }
-      pendingOrderList.forEach((order) => {
-        if (newBorrowDate.isAfter(moment(order.borrowDate))) {
-          throw new ApiErrorHandler(409, "Book is not available");
-        }
-      });
 
-      throw new ApiErrorHandler(409, "Book is not available");
+      const options = {
+        page,
+        limit,
+      };
+      const filter = {};
+
+      if (role === "user") {
+        filter.userId = userId;
+      }
+
+      const orderList = await Order.paginate(filter, options);
+
+      return orderList;
+    } catch (error) {
+      throw error;
     }
   },
 
-  update: async (req) => {
-    const { status, userId, bookId, borrowDate, _id: orderId } = req.body;
-    const { _id, role } = getUserDataFromToken(req);
+  create: async (orderData) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    switch (role) {
-      case "user":
-        // Prevent user from updating other user's order
-        if (_id.toString() !== userId.toString())
-          throw new ApiErrorHandler(403, "Forbidden");
-        break;
-
-      default:
-        break;
-    }
-
-    const order = await Order.findOneAndUpdate(
-      {
-        _id: orderId,
+    try {
+      const {
+        userId,
         bookId,
         borrowDate,
-      },
-      { status },
-      { new: true },
-    );
+        dueDate,
+        status = BORROWED,
+        quantity,
+      } = orderData;
 
-    if (!order) throw new ApiErrorHandler(404, "Order not found");
+      // check existed book with bookId
+      const book = await Book.findOne({
+        _id: bookId,
+        isPublished: true,
+      }).lean();
+      if (!book) throw new ApiErrorHandler(404, `${book.name} not found`);
 
-    return order;
+      // Check if quantity is equal to 0, push notification the number of days that user can borrow earliest
+      if (book.quantity === 0) {
+        const orderListWithBookId = await Order.find({
+          bookId,
+        })
+          .sort({ dueDate: 1 }) // sort by dueDate asc
+          .lean();
+        let { dueDate: nextAvailableBorrowDate } = orderListWithBookId[0]; // nextAvailableBorrowDate is dueDate earliest that user can borrow
+
+        throw new ApiErrorHandler(
+          400,
+          `${book.name}'s quantity not enough. Please try again after ${moment(
+            nextAvailableBorrowDate,
+          ).fromNow()}`,
+        );
+      }
+
+      // Check if quantity > remaining, return error
+      if (book.quantity < quantity)
+        throw new ApiErrorHandler(400, `${book.name}'s quantity not enough.`);
+
+      // Check the number of day that user want to borrow, must not be greater than one week
+      if (moment(dueDate).diff(borrowDate, "day") > 7) {
+        throw new ApiErrorHandler(
+          400,
+          `You can only borrow ${book.name} 7 days`,
+        );
+      }
+
+      // calculate quantity book that user can borrow in day, user only borrow 10 books/day
+      const quantityOrderTodayQuery = await Order.aggregate([
+        {
+          $match: {
+            status: {
+              $eq: BORROWED,
+            },
+          },
+        },
+        {
+          $match: {
+            borrowDate: {
+              $gte: moment().tz(TIMEZONE).startOf("day").valueOf(),
+              $lt: moment().tz(TIMEZONE).endOf("day").valueOf(),
+            },
+          },
+        },
+        {
+          $group: { _id: "$userId", value: { $sum: "$quantity" } },
+        },
+      ]);
+      const { value: quantityOrderToday } = quantityOrderTodayQuery[0] || 1;
+
+      if (quantityOrderToday + quantity > 5)
+        throw new ApiErrorHandler(400, "You can borrow only 5 books per day");
+
+      await Book.findOneAndUpdate(
+        { _id: bookId },
+        {
+          quantity: book.quantity - quantity,
+        },
+      );
+
+      const newOrder = await Order.create({
+        userId,
+        bookId,
+        dueDate,
+        status: status || BORROWED,
+        quantity: Number.parseInt(quantity),
+      });
+
+      await session.commitTransaction();
+      delete newOrder.bookId;
+      return newOrder;
+    } catch (error) {
+      // console.log(error);
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  },
+
+  update: async ({ updateData, orderId }) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      const {
+        quantity: bookQuantityUserChange,
+        bookId: newBookId,
+        status,
+      } = updateData;
+      const existingOrder = await Order.findOne({ _id: orderId });
+      if (!existingOrder) throw new ApiErrorHandler(404, "Order not found");
+      if (existingOrder.status === RETURNED)
+        throw new ApiErrorHandler(400, "This order has returned");
+      const { bookId: bookInOrder } = existingOrder;
+
+      if (bookQuantityUserChange > 5)
+        throw new ApiErrorHandler(400, "Invalid book quantity want to borrow");
+
+      if (status === RETURNED) {
+        const { bookId: bookInOrder } = existingOrder;
+        const bookQuantityInOrder = existingOrder.quantity;
+
+        await Book.updateOne(
+          { _id: bookInOrder._id },
+          { quantity: bookInOrder.quantity + existingOrder.quantity },
+        );
+
+        const updateOrder = await Order.updateOne(
+          { _id: existingOrder._id },
+          {
+            status: RETURNED,
+          },
+          { new: true },
+        ).lean();
+
+        await session.commitTransaction();
+        return updateOrder;
+      }
+
+      if (!bookQuantityUserChange) {
+        await Book.findOneAndUpdate(
+          { _id: bookInOrder._id },
+          { quantity: bookInOrder.quantity + existingOrder.quantity },
+        );
+        const updateOrder = await Order.updateOne(
+          { _id: orderId },
+          updateData,
+        ).lean();
+
+        await session.commitTransaction();
+        return updateOrder;
+      }
+      // user change book
+      if (bookInOrder._id.toString() !== newBookId.toString()) {
+        const newBookUserChange = await Book.findOne({
+          _id: newBookId,
+        }).lean();
+        if (bookQuantityUserChange > 5)
+          throw new ApiErrorHandler(404, "You can borrow only 5 books per day");
+        await Book.updateOne(
+          { _id: bookInOrder._id },
+          {
+            quantity: bookInOrder.quantity + existingOrder.quantity,
+          },
+        );
+        await Book.updateOne(
+          {
+            _id: newBookId,
+          },
+          { quantity: newBookUserChange.quantity - bookQuantityUserChange },
+        );
+
+        await session.commitTransaction();
+        return await Order.updateOne({ _id: orderId }, updateData).lean();
+      }
+
+      await Book.updateOne(
+        { _id: bookInOrder },
+        {
+          quantity:
+            bookInOrder.quantity +
+            existingOrder.quantity -
+            bookQuantityUserChange,
+        },
+      );
+
+      await session.commitTransaction();
+      return await Order.updateOne({ _id: orderId }, updateData).lean();
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  },
+
+  delete: async ({ orderIdList }) => {
+    try {
+      const listExistingOrder = await Order.find({
+        _id: { $in: orderIdList },
+      }).lean();
+
+      if (listExistingOrder.length !== orderIdList.length)
+        throw new ApiErrorHandler(404, "Some of orders not found");
+      if (listExistingOrder.some((order) => order.status === BORROWED))
+        throw new ApiErrorHandler(
+          400,
+          "Some of orders not returned, please check again!",
+        );
+
+      return await Order.deleteMany({
+        _id: { $in: orderIdList },
+      });
+    } catch (error) {
+      throw error;
+    }
   },
 
   getOrderInMonth: async ({ query: { _page, _limit, month } }) => {

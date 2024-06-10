@@ -1,6 +1,7 @@
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { User } from "../model/UserSchema.js";
 import bcrypt from "bcrypt";
+import AnalystServices from "./AnalystServices.js";
 
 export const UserServices = {
   getAllUser: async ({ query: { _page, _limit } }) => {
@@ -45,5 +46,17 @@ export const UserServices = {
       .catch((err) => {
         throw err;
       });
+  },
+  getUserOrders: async ({ month, userId, page, limit }) => {
+    try {
+      return await AnalystServices.getOrder({
+        month,
+        page,
+        limit,
+        userId,
+      });
+    } catch (error) {
+      throw error;
+    }
   },
 };

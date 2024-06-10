@@ -4,6 +4,7 @@ import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { User } from "../model/UserSchema.js";
 import { JwtServices } from "./JwtServices.js";
 import { utils } from "../utils/index.js";
+import { Token } from "../model/token.js";
 
 export const AuthServices = {
   login: async (data) => {
@@ -85,5 +86,17 @@ export const AuthServices = {
     return await User.findOneAndUpdate({ email }, { password: hashedPassword })
       .then((res) => res)
       .catch((err) => Promise.reject(err));
+  },
+
+  forgotPassword: async ({ email, tokenReset }) => {
+    try {
+      const emailInDB = await User.findOne({ email }).lean();
+      const tokenResetInDB = await Token.findOne({ value: tokenReset }).lean();
+
+      if (!emailInDB) throw new ApiErrorHandler(404, "Email not found");
+      if (!tokenResetInDB) throw new ApiErrorHandler(400, "Invalid token");
+    } catch (error) {
+      throw error;
+    }
   },
 };

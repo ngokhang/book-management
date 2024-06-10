@@ -34,6 +34,7 @@ BookRouter.route("/hide").patch(
  * api/book/search: GET - Search book
  */
 BookRouter.route("/search").get(
+  [validateData(schemas.search.book)],
   utils.asyncHandler(SearchController.searchBook),
 );
 

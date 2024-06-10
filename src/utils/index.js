@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import fs from "fs";
+import moment from "moment-timezone";
 
 export const utils = {
   checkExpires: (exp) => {
@@ -8,6 +9,31 @@ export const utils = {
   },
   comparePassword: async (password, hashedPassword) => {
     return await bcrypt.compare(password, hashedPassword);
+  },
+  generateKeyRandom: (length) => {
+    if (length < 1) return "";
+
+    const lettersAndDigits =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const specialCharacters = "!@#$%^&*()_+[]{}|;:,.<>?";
+
+    // Ensure the string has at least one special character
+    let result = [
+      specialCharacters[Math.floor(Math.random() * specialCharacters.length)],
+    ];
+
+    // Fill the rest of the string with random letters and digits
+    for (let i = 1; i < length; i++) {
+      result.push(
+        lettersAndDigits[Math.floor(Math.random() * lettersAndDigits.length)],
+      );
+    }
+
+    // Shuffle the result to ensure the special character isn't always in the same position
+    result = result.sort(() => Math.random() - 0.5);
+
+    // Join the array into a single string
+    return result.join("");
   },
 
   asyncHandler: (fn) => (req, res, next) => {

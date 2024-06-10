@@ -9,6 +9,7 @@ const book = {
     description: Joi.string(),
     thumbnail: Joi.string(),
     isPublished: Joi.boolean().default(true),
+    quantity: Joi.number().integer().greater(-1),
   }),
 
   update: Joi.object().keys({
@@ -18,6 +19,7 @@ const book = {
     description: Joi.string(),
     thumbnail: Joi.string(),
     isPublished: Joi.boolean(),
+    quantity: Joi.number().integer().greater(-1),
   }),
 
   delete: Joi.object().keys({

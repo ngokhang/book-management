@@ -2,6 +2,8 @@ import "dotenv/config";
 import { google } from "googleapis";
 import fs from "fs";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
+import "dotenv/config";
+import path from "path";
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -33,7 +35,7 @@ export const UploadFileServices = {
     }
   },
 
-  uploadFile: async (
+  uploadFileIntoGoogleDrive: async (
     filename = "Untitled",
     mimetype = "image/png",
     pathInLocal,
@@ -67,7 +69,7 @@ export const UploadFileServices = {
       throw new ApiErrorHandler(500, "Error when upload file");
     }
   },
-  deleteFile: async ({ fileId }) => {
+  deleteFileOnGoogleDrive: async ({ fileId }) => {
     try {
       const res = await driver.files.delete({
         fileId,
@@ -76,6 +78,30 @@ export const UploadFileServices = {
       return res.data;
     } catch (error) {
       throw new ApiErrorHandler(500, "Error when delete file");
+    }
+  },
+
+  uploadFileToDiskStorage: async ({ file }) => {
+    try {
+      if (
+        path.extname(file.originalname) !== ".png" ||
+        path.extname(file.originalname) !== ".jpg" ||
+        path.extname(file.originalname) !== ".jpeg"
+      )
+        throw new ApiErrorHandler(
+          422,
+          "Invalid image, only allowed : .png, .jpg, .jpeg",
+        );
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const fileName = uniqueSuffix + "-" + file.originalname;
+      const pathStorage = process.cwd() + "/src/uploads/" + fileName;
+      fs.writeFileSync(pathStorage, file.buffer);
+      const pathFinal = process.env.DEVELOP_MODE
+        ? `${process.env.DOMAIN_DEV}/src/uploads/${fileName}`
+        : `${process.env.DOMAIN_PROD}/src/uploads/${fileName}`;
+      return pathFinal;
+    } catch (error) {
+      throw error;
     }
   },
 };

@@ -29,4 +29,15 @@ export const UserController = {
 
     return response(res, 200, "Get user", user);
   },
+  getOrders: async (req, res) => {
+    const { month, page, limit } = req.query;
+    const { id: userId } = req.params;
+
+    return response(
+      res,
+      200,
+      "Get user orders",
+      await UserServices.getUserOrders({ month, userId, page, limit }),
+    );
+  },
 };

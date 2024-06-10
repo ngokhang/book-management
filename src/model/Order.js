@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import { BORROWED, RETURNED, PENDING } from "../constants/index.js";
 import autopopulate from "mongoose-autopopulate";
+import { BORROWED, RETURNED } from "../constants/index.js";
 import paginatePlugin from "./plugins/paginate.js";
 
 const OrderSchema = new Schema(
@@ -17,17 +17,29 @@ const OrderSchema = new Schema(
       autopopulate: true,
     },
     borrowDate: {
-      type: Schema.Types.Date,
-      default: Date.now,
+      type: Number,
+      default: new Date().getTime(),
     },
     dueDate: {
-      type: Schema.Types.Date,
-      required: true,
+      type: Number,
+      required: new Date().getTime(),
     },
     status: {
       type: String,
-      enum: [BORROWED, RETURNED, PENDING],
+      enum: [BORROWED, RETURNED],
       default: BORROWED,
+    },
+    createdAt: {
+      type: Number,
+      default: new Date().getTime(),
+    },
+    quantity: {
+      type: Number,
+      default: 1,
+    },
+    updatedAt: {
+      type: Number,
+      default: new Date().getTime(),
     },
   },
   {

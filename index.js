@@ -7,7 +7,7 @@ import { router } from "./src/router/index.js";
 import { ErrorHandlerMiddleware } from "./src/middlewares/ErrorHandler.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import multer from "multer";
+import path from "path";
 
 const app = express();
 
@@ -15,8 +15,10 @@ const PORT = process.env.PORT || 8080;
 
 connectDB();
 
+app.set("views", path.join("./src", "views"));
+app.set("view engine", "ejs");
 app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: true, type: "application/json" }));
 app.use(morgan("dev"));
 app.use(compression());
 app.use(cookieParser());

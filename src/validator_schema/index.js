@@ -1,10 +1,10 @@
-import Joi from "joi";
-import { REGEX_NAME } from "../constants/index.js";
-import user from "./user.js";
 import auth from "./auth.js";
-import order from "./order.js";
 import book from "./book.js";
 import category from "./category.js";
+import order from "./order.js";
+import user from "./user.js";
+import search from "./search.js";
+import analyst from "./analyst.js";
 
 export const schemas = {
   user: { ...user },
@@ -12,4 +12,6 @@ export const schemas = {
   category: { ...category },
   order: { ...order },
   book: { ...book },
+  search: { ...search },
+  analyst: { ...analyst },
 };

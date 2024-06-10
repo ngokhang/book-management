@@ -2,23 +2,30 @@ import { Book } from "../model/Book.js";
 import _ from "lodash";
 
 const SearchServices = {
-  searchBook: async ({ query: { q, _page, _limit } }) => {
+  searchBook: async ({ q = "", page = 1, limit = 10, category, author }) => {
+    let matchStage = {
+      $or: [],
+    };
+
+    console.log(matchStage);
+
+    if (q) matchStage.$or.push({ name: { $regex: q || "", $options: "i" } });
+    if (category)
+      matchStage.$or.push({
+        "categories.name": { $regex: category || "", $options: "i" },
+      });
+    if (author)
+      matchStage.$or.push({ author: { $regex: author || "", $options: "i" } });
+    if (matchStage.$or.length === 0) matchStage = {};
+
     try {
       const response = await Book.aggregate(
         [
           {
-            $skip: (Number.parseInt(_page) - 1) * 10 || 0,
+            $skip: (Number.parseInt(page) - 1) * 10 || 0,
           },
           {
-            $limit: Number.parseInt(_limit) || 0,
-          },
-          {
-            $lookup: {
-              from: "authors",
-              localField: "author",
-              foreignField: "_id",
-              as: "author",
-            },
+            $limit: Number.parseInt(limit) || 0,
           },
           {
             $lookup: {
@@ -29,28 +36,14 @@ const SearchServices = {
             },
           },
           {
-            $unwind: "$author",
-          },
-          {
-            $match: {
-              $or: [
-                { name: { $regex: q, $options: "i" } },
-                {
-                  "author.name": { $regex: q, $options: "i" },
-                },
-                {
-                  "categories.name": { $regex: q, $options: "i" },
-                },
-              ],
-            },
+            $match: matchStage,
           },
           {
             $project: {
               name: 1,
               description: 1,
               thumbnail: 1,
-              "author._id": 1,
-              "author.name": 1,
+              author: 1,
               "categories._id": 1,
               "categories.name": 1,
             },
@@ -58,14 +51,13 @@ const SearchServices = {
         ],
         { page: 1, limit: 10 },
       );
-      const totalDocuments = response.length;
-      const totalPages = Math.ceil(totalDocuments / _limit || 10);
+      const totalDocs = response.length;
+      const totalPages = Math.ceil(totalDocs / limit || 0);
       return {
         docs: response,
-        totalDocuments,
+        totalDocs,
         totalPages,
-        currentPage: _page,
-        limit: _limit,
+        currentPage: Number.parseInt(page),
       };
     } catch (error) {
       throw error;

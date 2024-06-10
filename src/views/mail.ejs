@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100vh;
+        overflow-x: hidden;
+        padding: 5px;
+      }
+      .container {
+        max-width: 1070px;
+        margin: 0 auto;
+      }
+      .header,
+      .footer {
+        text-align: center;
+      }
+      .content {
+        padding-top: 50px;
+        height: 250px;
+        font-size: 20px;
+        line-height: 1.5;
+        letter-spacing: normal;
+      }
+      .content > * {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header"><h1>Reset password email</h1></header>
+    <main class="container">
+      <div class="content">
+        <div class="title">
+          <h3>Hello world, <%=fullName%></h3>
+        </div>
+        <div class="token">
+          <span>Your reset token password is : <%=resetToken.value%> </span>
+        </div>
+        <div class="text">
+          <span
+            >Don't share this token for anyone. This token will expires at 2
+            minutes later
+          </span>
+        </div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div>Book management @2024</div>
+    </footer>
+  </body>
+</html>

@@ -4,6 +4,7 @@ import { response } from "../helpers/response.js";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { AuthServices } from "../services/AuthServices.js";
 import { JwtServices } from "../services/JwtServices.js";
+import ms from "ms";
 
 export const AuthController = {
   login: async (req, res, next) => {
@@ -22,6 +23,7 @@ export const AuthController = {
           httpOnly: true,
           secure: true,
           sameSite: "none",
+          maxAge: ms(process.env.REFRESH_TOKEN_LIFE),
         });
 
         return response(res, 200, "Login successful", { ...user, accessToken });
@@ -96,6 +98,25 @@ export const AuthController = {
         newPassword,
         confirmPassword,
       }),
+    );
+  },
+  logout: async (req, res, next) => {
+    const refresh_token = req.cookies.refresh_token;
+
+    if (refresh_token === "undefined") {
+      throw new ApiErrorHandler(400, "You are logged out");
+    }
+
+    return response(res, 200, "Logout successfully");
+  },
+  forgotPassword: async (req, res) => {
+    const { email, tokenReset } = req.body;
+
+    return response(
+      res,
+      200,
+      "Reset password",
+      await AuthServices.forgotPassword({ email, tokenReset }),
     );
   },
 };
