@@ -44,6 +44,7 @@ const SearchServices = {
               description: 1,
               thumbnail: 1,
               author: 1,
+              quantity: 1,
               "categories._id": 1,
               "categories.name": 1,
             },

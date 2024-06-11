@@ -5,38 +5,39 @@ import { Order } from "../model/Order.js";
 
 const AnalystServices = {
   getOrder: async ({ month, userId, page, limit }) => {
-    const filter = {};
-    const options = { page, limit };
+    try {
+      const filter = {};
+      const options = { page, limit };
 
-    if (month) {
-      const [startRange, endRange] = month;
-      if (endRange && startRange > endRange)
-        throw new ApiErrorHandler(400, "Invalid time range");
+      if (month) {
+        let [startRange, endRange] = month;
+        if (endRange && startRange > endRange)
+          throw new ApiErrorHandler(400, "Invalid time range");
+        if (!endRange || startRange === endRange) endRange = startRange;
 
-      const startRangeTimestamp = moment()
-        .tz(TIMEZONE)
-        .month(startRange - 1)
-        .startOf("month")
-        .valueOf();
-      const endRangeTimestamp = moment()
-        .tz(TIMEZONE)
-        .month(endRange - 1)
-        .startOf("month")
-        .valueOf();
+        console.log(startRange, endRange);
 
-      if (startRange && endRange) {
-        filter.borrowDate = { $gte: startRangeTimestamp };
-        filter.dueDate = { $lte: endRangeTimestamp };
-      } else if (startRange === endRange || !endRange) {
-        filter.borrowDate = { $gte: startRangeTimestamp };
-        filter.dueDate = { $gte: startRangeTimestamp };
+        const startRangeTimestamp = new Date(2024, startRange - 1, 2).getTime();
+        let endRangeTimestamp = new Date(2024, endRange, 1).getTime();
+
+        if (startRange && endRange) {
+          filter.borrowDate = { $gte: startRangeTimestamp };
+          filter.dueDate = { $lt: endRangeTimestamp };
+        } else if (startRange === endRange || !endRange) {
+          filter.borrowDate = { $gte: startRangeTimestamp };
+          filter.dueDate = { $lt: endRangeTimestamp };
+        }
       }
-    }
-    if (userId) {
-      filter.userId = userId;
-    }
+      if (userId) {
+        filter.userId = userId;
+      }
 
-    return await Order.paginate(filter, options);
+      const response = await Order.paginate(filter, options);
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
   },
 
   getMostBorrowedBooksDescending: async () => {

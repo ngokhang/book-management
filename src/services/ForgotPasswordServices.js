@@ -48,11 +48,9 @@ const ForgotPasswordServices = {
   resetPassword: async ({ resetToken, newPass }) => {
     try {
       const resetTokenInDB = await Token.findOne({ value: resetToken }).lean();
-      if (!resetTokenInDB) throw new ApiErrorHandler(404, "Token not found");
-      if (
-        resetTokenInDB.expiresAt <
-        moment().tz(TIMEZONE).add(2, "minutes").valueOf()
-      ) {
+      console.log(moment().tz(TIMEZONE).valueOf());
+      if (!resetTokenInDB) throw new ApiErrorHandler(404, "Token invalid");
+      if (resetTokenInDB.expiresAt < moment().tz(TIMEZONE).valueOf()) {
         await Token.deleteOne({ value: resetToken });
         throw new ApiErrorHandler(400, "Token expired");
       }
@@ -62,10 +60,11 @@ const ForgotPasswordServices = {
       const { user } = resetTokenInDB;
       const salt = await bcrypt.genSalt(10);
       const newHashPassword = await bcrypt.hash(newPass, salt);
-      await User.findOneAndUpdate(
+
+      const updatePassword = await User.findOneAndUpdate(
         { _id: user._id },
         { password: newHashPassword },
-      );
+      ).then(async (res) => await Token.deleteOne({ _id: resetTokenInDB._id }));
 
       return { message: "Reset password successfully" };
     } catch (error) {

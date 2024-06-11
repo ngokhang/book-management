@@ -103,10 +103,12 @@ export const AuthController = {
   logout: async (req, res, next) => {
     const refresh_token = req.cookies.refresh_token;
 
-    if (refresh_token === "undefined") {
+    if (refresh_token === undefined) {
       throw new ApiErrorHandler(400, "You are logged out");
     }
 
+    res.clearCookie("refresh_token");
+    res.end();
     return response(res, 200, "Logout successfully");
   },
   forgotPassword: async (req, res) => {
