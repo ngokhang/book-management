@@ -1,7 +1,7 @@
-import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
-import { User } from "../model/UserSchema.js";
 import bcrypt from "bcrypt";
-import AnalystServices from "./AnalystServices.js";
+import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
+import { Order } from "../model/Order.js";
+import { User } from "../model/UserSchema.js";
 
 export const UserServices = {
   getAllUser: async ({ query: { _page, _limit } }) => {
@@ -36,11 +36,13 @@ export const UserServices = {
       .then((res) => res)
       .catch((err) => err);
   },
-  update: async ({ params: { _id }, body }) => {
+  update: async ({ params: { id: _id }, body }) => {
     const user = await User.findOne({ _id });
     if (!user) throw new Error("User invalid");
 
-    return await User.updateOne({ _id }, { body })
+    console.log(user);
+
+    return await User.updateOne({ _id }, body)
       .exec()
       .then((res) => res)
       .catch((err) => {
@@ -49,12 +51,33 @@ export const UserServices = {
   },
   getUserOrders: async ({ month, userId, page, limit }) => {
     try {
-      return await AnalystServices.getOrder({
-        month,
-        page,
-        limit,
-        userId,
-      });
+      const filter = {};
+      const options = { page, limit };
+
+      if (month) {
+        let [startRange, endRange] = month;
+        if (endRange && startRange > endRange)
+          throw new ApiErrorHandler(400, "Invalid time range");
+        if (!endRange || startRange === endRange) endRange = startRange;
+
+        const startRangeTimestamp = new Date(2024, startRange - 1, 2).getTime();
+        let endRangeTimestamp = new Date(2024, endRange, 1).getTime();
+
+        if (startRange && endRange) {
+          filter.borrowDate = { $gte: startRangeTimestamp };
+          filter.dueDate = { $lt: endRangeTimestamp };
+        } else if (startRange === endRange || !endRange) {
+          filter.borrowDate = { $gte: startRangeTimestamp };
+          filter.dueDate = { $lt: endRangeTimestamp };
+        }
+      }
+      if (userId) {
+        filter.userId = userId;
+      }
+
+      const response = await Order.paginate(filter, options);
+
+      return response;
     } catch (error) {
       throw error;
     }

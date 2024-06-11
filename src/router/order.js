@@ -11,7 +11,7 @@ const OrderRouter = express.Router();
 OrderRouter.route("/")
   .get(AuthenticatedMiddleware(), utils.asyncHandler(OrderController.getAll))
   .post(
-    [AuthenticatedMiddleware(), validateData(schemas.order.create)],
+    [validateData(schemas.order.create)],
     utils.asyncHandler(OrderController.create),
   )
   .delete(

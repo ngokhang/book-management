@@ -1,22 +1,12 @@
 import Joi from "joi";
-import { BORROWED, TIMEZONE } from "../constants/index.js";
-import moment from "moment";
+import { BORROWED } from "../constants/index.js";
 
 const order = {
   create: Joi.object().keys({
     bookId: Joi.string().hex().length(24).required(),
-    userId: Joi.string().hex().length(24).required(),
-    borrowDate: Joi.number()
-      .integer()
-      .greater(moment().tz(TIMEZONE).valueOf())
-      .default(new Date().getTime())
-      .required(),
-    dueDate: Joi.number()
-      .integer()
-      .greater(0)
-      .required()
-      .greater(Joi.ref("borrowDate"))
-      .required(),
+    userId: Joi.string().hex().length(24),
+    borrowDate: Joi.date().timestamp().required(),
+    dueDate: Joi.date().timestamp().greater(Joi.ref("borrowDate")).required(),
     status: Joi.string().default(BORROWED),
     quantity: Joi.number().integer().positive().default(1).required(),
   }),

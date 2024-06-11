@@ -53,23 +53,11 @@ export const OrderServices = {
         _id: bookId,
         isPublished: true,
       }).lean();
-      if (!book) throw new ApiErrorHandler(404, `${book.name} not found`);
+      if (!book) throw new ApiErrorHandler(404, `Book not found`);
 
       // Check if quantity is equal to 0, push notification the number of days that user can borrow earliest
       if (book.quantity === 0) {
-        const orderListWithBookId = await Order.find({
-          bookId,
-        })
-          .sort({ dueDate: 1 }) // sort by dueDate asc
-          .lean();
-        let { dueDate: nextAvailableBorrowDate } = orderListWithBookId[0]; // nextAvailableBorrowDate is dueDate earliest that user can borrow
-
-        throw new ApiErrorHandler(
-          400,
-          `${book.name}'s quantity not enough. Please try again after ${moment(
-            nextAvailableBorrowDate,
-          ).fromNow()}`,
-        );
+        throw new ApiErrorHandler(400, `${book.name}'s quantity not enough.`);
       }
 
       // Check if quantity > remaining, return error
@@ -77,7 +65,7 @@ export const OrderServices = {
         throw new ApiErrorHandler(400, `${book.name}'s quantity not enough.`);
 
       // Check the number of day that user want to borrow, must not be greater than one week
-      if (moment(dueDate).diff(borrowDate, "day") > 7) {
+      if (moment(dueDate).diff(borrowDate, "d") > 7) {
         throw new ApiErrorHandler(
           400,
           `You can only borrow ${book.name} 7 days`,
@@ -91,13 +79,12 @@ export const OrderServices = {
             status: {
               $eq: BORROWED,
             },
-          },
-        },
-        {
-          $match: {
             borrowDate: {
               $gte: moment().tz(TIMEZONE).startOf("day").valueOf(),
               $lt: moment().tz(TIMEZONE).endOf("day").valueOf(),
+            },
+            userId: {
+              $eq: userId,
             },
           },
         },
@@ -107,8 +94,8 @@ export const OrderServices = {
       ]);
       const { value: quantityOrderToday } = quantityOrderTodayQuery[0] || 1;
 
-      if (quantityOrderToday + quantity > 5)
-        throw new ApiErrorHandler(400, "You can borrow only 5 books per day");
+      if (quantityOrderToday + quantity > 10)
+        throw new ApiErrorHandler(400, "You can borrow only 10 books per day");
 
       await Book.findOneAndUpdate(
         { _id: bookId },
@@ -152,19 +139,15 @@ export const OrderServices = {
         throw new ApiErrorHandler(400, "This order has returned");
       const { bookId: bookInOrder } = existingOrder;
 
-      if (bookQuantityUserChange > 5)
-        throw new ApiErrorHandler(400, "Invalid book quantity want to borrow");
-
       if (status === RETURNED) {
         const { bookId: bookInOrder } = existingOrder;
-        const bookQuantityInOrder = existingOrder.quantity;
 
         await Book.updateOne(
           { _id: bookInOrder._id },
           { quantity: bookInOrder.quantity + existingOrder.quantity },
         );
 
-        const updateOrder = await Order.updateOne(
+        const updateOrder = await Order.findOneAndUpdate(
           { _id: existingOrder._id },
           {
             status: RETURNED,
@@ -174,6 +157,37 @@ export const OrderServices = {
 
         await session.commitTransaction();
         return updateOrder;
+      }
+
+      // user change book
+      if (bookInOrder._id.toString() !== newBookId.toString()) {
+        const newBookUserChange = await Book.findOne({
+          _id: newBookId,
+        }).lean();
+        if (!newBookUserChange)
+          throw new ApiErrorHandler(404, "Book not found");
+        await Book.updateOne(
+          { _id: bookInOrder._id },
+          {
+            quantity: bookInOrder.quantity + existingOrder.quantity,
+          },
+        );
+        await Book.updateOne(
+          {
+            _id: newBookId,
+          },
+          {
+            quantity:
+              newBookUserChange.quantity -
+              (bookQuantityUserChange || existingOrder.quantity),
+          },
+        );
+
+        await session.commitTransaction();
+        return await Order.findOneAndUpdate(
+          { _id: orderId },
+          updateData,
+        ).lean();
       }
 
       if (!bookQuantityUserChange) {
@@ -189,29 +203,6 @@ export const OrderServices = {
         await session.commitTransaction();
         return updateOrder;
       }
-      // user change book
-      if (bookInOrder._id.toString() !== newBookId.toString()) {
-        const newBookUserChange = await Book.findOne({
-          _id: newBookId,
-        }).lean();
-        if (bookQuantityUserChange > 5)
-          throw new ApiErrorHandler(404, "You can borrow only 5 books per day");
-        await Book.updateOne(
-          { _id: bookInOrder._id },
-          {
-            quantity: bookInOrder.quantity + existingOrder.quantity,
-          },
-        );
-        await Book.updateOne(
-          {
-            _id: newBookId,
-          },
-          { quantity: newBookUserChange.quantity - bookQuantityUserChange },
-        );
-
-        await session.commitTransaction();
-        return await Order.updateOne({ _id: orderId }, updateData).lean();
-      }
 
       await Book.updateOne(
         { _id: bookInOrder },
@@ -224,7 +215,9 @@ export const OrderServices = {
       );
 
       await session.commitTransaction();
-      return await Order.updateOne({ _id: orderId }, updateData).lean();
+      return await Order.updateOne({ _id: orderId }, updateData, {
+        new: true,
+      }).lean();
     } catch (error) {
       await session.abortTransaction();
       throw error;

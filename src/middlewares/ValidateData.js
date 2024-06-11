@@ -1,13 +1,19 @@
 export default function validateData(schema) {
   return (req, res, next) => {
     const { body, query } = req;
-    for (const keys in query) {
-      if (query[keys].startsWith("[")) query[keys] = JSON.parse(query[keys]);
-    }
+
     const { error } = schema.validate(body);
-    const { error: errorQuery } = schema.validate(query);
+    let errorQuery = null;
+    if (Object.keys(query).length > 0) {
+      for (const keys in query) {
+        if (query[keys].startsWith("[")) query[keys] = JSON.parse(query[keys]);
+      }
+      let { values, error } = schema.validate(query);
+      errorQuery = error;
+    }
+
     const valid = error == null;
-    const validQuery = errorQuery == undefined;
+    const validQuery = errorQuery == null;
 
     if (valid && validQuery) {
       next();

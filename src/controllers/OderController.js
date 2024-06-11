@@ -17,18 +17,19 @@ export const OrderController = {
   getUserOrders: async (req, res) =>
     response(res, 200, "Get order", await OrderServices.getUserOrders(req)),
   create: async (req, res) => {
-    const orderData = { ...req.body };
+    const orderData = req.body;
+    // const { _id: userId } = getUserDataFromToken(req);
 
     return response(
       res,
       201,
       "Create order",
-      await OrderServices.create(orderData),
+      await OrderServices.create({ ...orderData }),
     );
   },
   update: async (req, res) => {
     const { orderId } = req.params;
-    const updateData = { ...req.body };
+    const updateData = req.body;
 
     return response(
       res,

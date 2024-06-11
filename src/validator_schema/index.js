@@ -10,7 +10,7 @@ export const schemas = {
   user: { ...user },
   auth: { ...auth },
   category: { ...category },
-  order: { ...order },
+  order,
   book: { ...book },
   search: { ...search },
   analyst: { ...analyst },
