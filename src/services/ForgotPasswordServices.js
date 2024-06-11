@@ -27,7 +27,7 @@ const ForgotPasswordServices = {
         { resetToken, fullName: `${userInDB.firstName} ${userInDB.lastName}` },
         async function (error, data) {
           if (error) {
-            console.log(error);
+            throw new ApiErrorHandler(400, error.message);
           } else {
             const optionsSendmail = {
               from: process.env.EMAIL, // sender address
@@ -48,6 +48,7 @@ const ForgotPasswordServices = {
   resetPassword: async ({ resetToken, newPass }) => {
     try {
       const resetTokenInDB = await Token.findOne({ value: resetToken }).lean();
+      if (!resetTokenInDB) throw new ApiErrorHandler(404, "Token not found");
       if (
         resetTokenInDB.expiresAt <
         moment().tz(TIMEZONE).add(2, "minutes").valueOf()

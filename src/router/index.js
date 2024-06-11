@@ -35,7 +35,7 @@ router.post(
 router
   .route("/forgot-password")
   .post(utils.asyncHandler(ForgotPasswordController.sendRequestReset))
-  .patch(ForgotPasswordController.setNewPassword);
+  .patch(utils.asyncHandler(ForgotPasswordController.setNewPassword));
 
 router
   .route("/upload/book-thumbnail")
