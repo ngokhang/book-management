@@ -16,11 +16,18 @@ const order = {
   }),
 
   update: Joi.object().keys({
-    bookId: Joi.string().hex().length(24).required(),
-    status: Joi.string(),
-    borrowDate: Joi.date().timestamp().greater(0),
-    dueDate: Joi.date().timestamp().greater(Joi.ref("borrowDate")),
-    quantity: Joi.number().integer().greater(0).positive(),
+    userId: Joi.string().hex().length(24),
+    status: Joi.string().required(),
+    borrowDate: Joi.date().timestamp().greater(0).required(),
+    dueDate: Joi.date().timestamp().greater(Joi.ref("borrowDate")).required(),
+    books: Joi.array()
+      .items(
+        Joi.object().keys({
+          _id: Joi.string().hex().length(24).required(),
+          quantity: Joi.number().integer().greater(0).default(1).required(),
+        }),
+      )
+      .required(),
   }),
 
   delete: Joi.object().keys({

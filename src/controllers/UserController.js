@@ -11,7 +11,13 @@ export const UserController = {
     });
   },
   update: async (req, res, next) => {
-    return response(res, 200, "Update user", await UserServices.update(req));
+    const { params, body } = req;
+    return response(
+      res,
+      200,
+      "Update user",
+      await UserServices.update({ params, body }),
+    );
   },
   delete: async (req, res, next) => {
     const { id } = req.params;

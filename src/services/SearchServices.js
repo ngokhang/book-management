@@ -4,19 +4,17 @@ import _ from "lodash";
 const SearchServices = {
   searchBook: async ({ q = "", page = 1, limit = 10, category, author }) => {
     let matchStage = {
-      $or: [],
+      $and: [],
     };
 
-    console.log(matchStage);
-
-    if (q) matchStage.$or.push({ name: { $regex: q || "", $options: "i" } });
+    if (q) matchStage.$and.push({ name: { $regex: q || "", $options: "i" } });
     if (category)
-      matchStage.$or.push({
+      matchStage.$and.push({
         "categories.name": { $regex: category || "", $options: "i" },
       });
     if (author)
-      matchStage.$or.push({ author: { $regex: author || "", $options: "i" } });
-    if (matchStage.$or.length === 0) matchStage = {};
+      matchStage.$and.push({ author: { $regex: author || "", $options: "i" } });
+    if (matchStage.$and.length === 0) matchStage = {};
 
     try {
       const response = await Book.aggregate(

@@ -12,7 +12,12 @@ const OrderSchema = new Schema(
     },
     books: [
       {
-        _id: { type: Schema.Types.ObjectId, ref: "Book", required: true },
+        _id: {
+          type: Schema.Types.ObjectId,
+          ref: "Book",
+          required: true,
+          autopopulate: true,
+        },
         quantity: { type: Number, default: 1 },
       },
     ],
