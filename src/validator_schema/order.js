@@ -3,19 +3,23 @@ import { BORROWED } from "../constants/index.js";
 
 const order = {
   create: Joi.object().keys({
-    bookId: Joi.string().hex().length(24).required(),
+    books: Joi.array().items(
+      Joi.object().keys({
+        _id: Joi.string().hex().length(24).required(),
+        quantity: Joi.number().integer().greater(0).default(1),
+      }),
+    ),
     userId: Joi.string().hex().length(24),
     borrowDate: Joi.date().timestamp().required(),
     dueDate: Joi.date().timestamp().greater(Joi.ref("borrowDate")).required(),
     status: Joi.string().default(BORROWED),
-    quantity: Joi.number().integer().positive().default(1).required(),
   }),
 
   update: Joi.object().keys({
-    bookId: Joi.string().hex().length(24),
+    bookId: Joi.string().hex().length(24).required(),
     status: Joi.string(),
-    borrowDate: Joi.number().integer().greater(0),
-    dueDate: Joi.number().integer().greater(0).greater(Joi.ref("borrowDate")),
+    borrowDate: Joi.date().timestamp().greater(0),
+    dueDate: Joi.date().timestamp().greater(Joi.ref("borrowDate")),
     quantity: Joi.number().integer().greater(0).positive(),
   }),
 

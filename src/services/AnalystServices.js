@@ -17,8 +17,8 @@ const AnalystServices = {
 
         console.log(startRange, endRange);
 
-        const startRangeTimestamp = new Date(2024, startRange - 1, 2).getTime();
-        let endRangeTimestamp = new Date(2024, endRange, 1).getTime();
+        const startRangeTimestamp = new Date(2024, startRange - 1, 2).getTime(); // 01/01/2024
+        let endRangeTimestamp = new Date(2024, endRange, 1).getTime(); // 31/1/2024
 
         if (startRange && endRange) {
           filter.borrowDate = { $gte: startRangeTimestamp };

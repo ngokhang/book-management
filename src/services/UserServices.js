@@ -38,6 +38,7 @@ export const UserServices = {
   },
   update: async ({ params: { _id }, body }) => {
     const user = await User.findOne({ _id });
+    console.log(_id);
     if (!user) throw new Error("User invalid");
 
     return await User.updateOne({ _id }, { body })

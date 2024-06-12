@@ -5,6 +5,7 @@ import getUserDataFromToken from "../helpers/getUserDataFromToken.js";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { Book } from "../model/Book.js";
 import { Order } from "../model/Order.js";
+import getTimestampOfDate from "../utils/getTimestampOfDate.js";
 
 export const OrderServices = {
   getAll: async ({ page, limit, role, userId }) => {
@@ -35,92 +36,83 @@ export const OrderServices = {
   },
 
   create: async (orderData) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
-      const {
-        userId,
-        bookId,
-        borrowDate,
-        dueDate,
-        status = BORROWED,
-        quantity,
-      } = orderData;
+      let { userId, books, borrowDate, dueDate, status = BORROWED } = orderData;
+      console.log(
+        getTimestampOfDate(1, new Date().getMonth(), new Date().getFullYear()),
+      );
 
-      // check existed book with bookId
-      const book = await Book.findOne({
-        _id: bookId,
-        isPublished: true,
-      }).lean();
-      if (!book) throw new ApiErrorHandler(404, `Book not found`);
-
-      // Check if quantity is equal to 0, push notification the number of days that user can borrow earliest
-      if (book.quantity === 0) {
-        throw new ApiErrorHandler(400, `${book.name}'s quantity not enough.`);
-      }
-
-      // Check if quantity > remaining, return error
-      if (book.quantity < quantity)
-        throw new ApiErrorHandler(400, `${book.name}'s quantity not enough.`);
-
-      // Check the number of day that user want to borrow, must not be greater than one week
-      if (moment(dueDate).diff(borrowDate, "d") > 7) {
-        throw new ApiErrorHandler(
-          400,
-          `You can only borrow ${book.name} 7 days`,
+      // group by _id of book when duplicate
+      books = books.reduce((acc, curr) => {
+        const indexOfExisted = acc.findIndex(
+          (element) => element._id === curr._id,
         );
-      }
+        if (indexOfExisted > -1) {
+          acc[indexOfExisted] = {
+            ...acc[indexOfExisted],
+            quantity: acc[indexOfExisted].quantity + curr.quantity,
+          };
+          return acc;
+        }
+        acc.push(curr);
+        return acc;
+      }, []);
 
-      // calculate quantity book that user can borrow in day, user only borrow 10 books/day
-      const quantityOrderTodayQuery = await Order.aggregate([
+      // Check valid book in order is valid
+      await Promise.all(
+        books.map(async (book) => {
+          const findBookValid = await Book.findOne({ _id: book._id }).lean();
+          if (!findBookValid)
+            throw new ApiErrorHandler(400, "Some of the books is invalid");
+          if (findBookValid.quantity === 0)
+            throw new ApiErrorHandler(
+              400,
+              `${findBookValid.name} isn't enough to borrow`,
+            );
+          if (findBookValid.quantity < book.quantity)
+            throw new ApiErrorHandler(
+              400,
+              `${findBookValid.name} isn't enough to borrow`,
+            );
+        }),
+      ).catch((err) => {
+        throw err;
+      });
+
+      // check the days that user want to borrow, not allow greater than 7
+      if (moment(dueDate).diff(borrowDate, "day") > 7)
+        throw new ApiErrorHandler(400, "You only borrow on 7 days");
+
+      // check the quantity of books that user borrowed month, not allow greater 5 books/month
+      const quantityOrderQuery = await Order.aggregate([
         {
           $match: {
             status: {
               $eq: BORROWED,
             },
             borrowDate: {
-              $gte: moment().tz(TIMEZONE).startOf("day").valueOf(),
-              $lt: moment().tz(TIMEZONE).endOf("day").valueOf(),
-            },
-            userId: {
-              $eq: userId,
+              $gte: new Date(
+                new Date().getFullYear,
+                new Date().getMonth > 9
+                  ? new Date().getMonth() - 1
+                  : `0${new Date().getMonth() - 1}`,
+                2,
+              ).getTime(),
+              $lt: new Date(
+                new Date().getFullYear,
+                new Date().getMonth > 9
+                  ? new Date().getMonth()
+                  : `0${new Date().getMonth()}`,
+                2,
+              ).getTime(),
             },
           },
         },
-        {
-          $group: { _id: "$userId", value: { $sum: "$quantity" } },
-        },
       ]);
-      const { value: quantityOrderToday } = quantityOrderTodayQuery[0] || 1;
 
-      if (quantityOrderToday + quantity > 10)
-        throw new ApiErrorHandler(400, "You can borrow only 10 books per day");
-
-      await Book.findOneAndUpdate(
-        { _id: bookId },
-        {
-          quantity: book.quantity - quantity,
-        },
-      );
-
-      const newOrder = await Order.create({
-        userId,
-        bookId,
-        dueDate,
-        status: status || BORROWED,
-        quantity: Number.parseInt(quantity),
-      });
-
-      await session.commitTransaction();
-      delete newOrder.bookId;
-      return newOrder;
+      return books;
     } catch (error) {
-      // console.log(error);
-      await session.abortTransaction();
       throw error;
-    } finally {
-      session.endSession();
     }
   },
 

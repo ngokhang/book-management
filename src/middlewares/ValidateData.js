@@ -2,6 +2,8 @@ export default function validateData(schema) {
   return (req, res, next) => {
     const { body, query } = req;
 
+    console.log(body);
+
     const { error } = schema.validate(body);
     let errorQuery = null;
     if (Object.keys(query).length > 0) {
