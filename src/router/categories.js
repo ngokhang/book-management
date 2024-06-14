@@ -13,9 +13,9 @@ CategoryRouter.route("/")
   .get(CategoryController.getAll)
   .post(
     [
-      validateData(schemas.createCategorySchema),
       AuthenticatedMiddleware(),
       CheckIsAdminMiddleware(),
+      validateData(schemas.category.create),
     ],
     utils.asyncHandler(CategoryController.create),
   )

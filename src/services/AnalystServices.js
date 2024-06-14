@@ -1,7 +1,9 @@
 import moment from "moment-timezone";
-import { TIMEZONE } from "../constants/index.js";
+import { BORROWED, TIMEZONE } from "../constants/index.js";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { Order } from "../model/Order.js";
+import getTimestampOfDate from "../utils/getTimestampOfDate.js";
+import _ from "lodash";
 
 const AnalystServices = {
   getOrder: async ({ month, userId, page, limit }) => {
@@ -15,10 +17,16 @@ const AnalystServices = {
           throw new ApiErrorHandler(400, "Invalid time range");
         if (!endRange || startRange === endRange) endRange = startRange;
 
-        console.log(startRange, endRange);
-
-        const startRangeTimestamp = new Date(2024, startRange - 1, 2).getTime();
-        let endRangeTimestamp = new Date(2024, endRange, 1).getTime();
+        const startRangeTimestamp = getTimestampOfDate(
+          1,
+          startRange,
+          new Date().getFullYear(),
+        ); // Ex: 01/01/2024
+        let endRangeTimestamp = getTimestampOfDate(
+          0,
+          endRange + 1,
+          new Date().getFullYear(),
+        ); // Ex: 31/1/2024
 
         if (startRange && endRange) {
           filter.borrowDate = { $gte: startRangeTimestamp };
@@ -42,58 +50,37 @@ const AnalystServices = {
 
   getMostBorrowedBooksDescending: async () => {
     try {
-      return await Order.aggregate([
-        {
-          $lookup: {
-            from: "books",
-            localField: "bookId",
-            foreignField: "_id",
-            as: "bookId",
-          },
-        },
-        {
-          $group: {
-            _id: "$bookId",
-            count: { $sum: "$quantity" },
-          },
-        },
-        {
-          $project: {
-            _id: {
-              name: 1,
-              categories: 1,
-            },
-            count: 1,
-          },
-        },
-        {
-          $project: {
-            book: "$_id",
-            count: 1,
-          },
-        },
-        {
-          $unwind: "$book",
-        },
-        {
-          $replaceWith: {
-            $mergeObjects: ["$$ROOT", "$book"],
-          },
-        },
-        {
-          $unset: ["_id", "book"],
-        },
-        {
-          $lookup: {
-            from: "categories",
-            localField: "categories",
-            foreignField: "_id",
-            as: "categories",
-          },
-        },
-      ]).sort({
-        count: -1,
-      });
+      const ordersInDB = await Order.find({});
+      const bookListInOrders = ordersInDB.reduce((acc, curr) => {
+        const { books } = curr;
+        books.forEach((book) => {
+          const newObj = JSON.parse(JSON.stringify(book));
+          newObj["bookInfo"] = newObj["_id"];
+          delete newObj["_id"];
+          acc.push(newObj);
+        });
+        return acc;
+      }, []);
+      const result = bookListInOrders
+        .reduce((acc, curr) => {
+          const { bookInfo, quantity } = curr;
+          const idxExisted = acc.findIndex(
+            (item) => item.bookInfo._id === bookInfo._id,
+          );
+          if (idxExisted > -1) {
+            acc[idxExisted] = {
+              ...acc[idxExisted],
+              quantity: acc[idxExisted].quantity + quantity,
+            };
+            return acc;
+          }
+          acc.push(curr);
+          return acc;
+        }, [])
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 5);
+
+      return result;
     } catch (err) {
       throw err;
     }

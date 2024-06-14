@@ -39,6 +39,8 @@ export const UserController = {
     const { month, page, limit } = req.query;
     const { id: userId } = req.params;
 
+    console.log(">>> ", month);
+
     return response(
       res,
       200,

@@ -10,12 +10,17 @@ const OrderSchema = new Schema(
       ref: "User",
       required: true,
     },
-    bookId: {
-      type: Schema.Types.ObjectId,
-      ref: "Book",
-      required: true,
-      autopopulate: true,
-    },
+    books: [
+      {
+        _id: {
+          type: Schema.Types.ObjectId,
+          ref: "Book",
+          required: true,
+          autopopulate: true,
+        },
+        quantity: { type: Number, default: 1 },
+      },
+    ],
     borrowDate: {
       type: Number,
       default: new Date().getTime(),
@@ -32,10 +37,6 @@ const OrderSchema = new Schema(
     createdAt: {
       type: Number,
       default: new Date().getTime(),
-    },
-    quantity: {
-      type: Number,
-      default: 1,
     },
     updatedAt: {
       type: Number,
