@@ -24,6 +24,7 @@ app.use(compression());
 app.use(cookieParser());
 
 app.use(cors());
+app.use("/src/uploads", express.static("src/uploads"));
 app.use("/api", router);
 app.use(ErrorHandlerMiddleware);
 
