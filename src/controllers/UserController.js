@@ -1,3 +1,4 @@
+import getUserDataFromToken from "../helpers/getUserDataFromToken.js";
 import { response } from "../helpers/response.js";
 import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { UserServices } from "../services/UserServices.js";
@@ -12,11 +13,13 @@ export const UserController = {
   },
   update: async (req, res, next) => {
     const { params, body } = req;
+    const { role } = getUserDataFromToken(req);
+
     return response(
       res,
       200,
       "Update user",
-      await UserServices.update({ params, body }),
+      await UserServices.update({ params, body, role }),
     );
   },
   delete: async (req, res, next) => {

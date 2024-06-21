@@ -20,6 +20,7 @@ const user = {
     firstName: Joi.string().regex(REGEX_NAME, "human name"),
     lastName: Joi.string().regex(REGEX_NAME, "human name"),
     email: Joi.string().email(),
+    role: Joi.string().valid("user", "admin"),
   }),
 
   getOrders: Joi.object().keys({
