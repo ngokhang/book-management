@@ -16,4 +16,9 @@ AnalystRouter.route("/book").get(
   AnalystController.getMostBorrowedBooksDescending,
 );
 
+AnalystRouter.route("/user/order").get(
+  [validateData(schemas.analyst.getOrder)],
+  AnalystController.getListUsersBorrowTheMost,
+);
+
 export default AnalystRouter;

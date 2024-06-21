@@ -38,13 +38,13 @@ export const UserServices = {
   },
   update: async ({ params: { id: _id }, body, role }) => {
     const user = await User.findOne({ _id });
-    if (!user) throw new Error("User invalid");
+    if (!user) throw new ApiErrorHandler(400, "User invalid");
 
     if (body.role && role !== "admin") {
       throw new ApiErrorHandler(403, "Forbidden");
     }
 
-    return await User.updateOne({ _id }, body)
+    return await User.findOneAndUpdate({ _id }, body)
       .exec()
       .then((res) => res)
       .catch((err) => {

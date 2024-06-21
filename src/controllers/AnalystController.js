@@ -21,6 +21,22 @@ const AnalystController = {
       await AnalystServices.getMostBorrowedBooksDescending(),
     );
   },
+
+  getListUsersBorrowTheMost: async (req, res) => {
+    const { month, userId, page, limit } = req.query;
+
+    return response(
+      res,
+      200,
+      "The list of users borrow the most",
+      await AnalystServices.getListUsersBorrowTheMost({
+        month,
+        userId,
+        page,
+        limit,
+      }),
+    );
+  },
 };
 
 export default AnalystController;
