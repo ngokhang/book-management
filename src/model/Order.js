@@ -34,6 +34,10 @@ const OrderSchema = new Schema(
       enum: [BORROWED, RETURNED],
       default: BORROWED,
     },
+    totalPrice: {
+      type: Number,
+      required: true,
+    },
     createdAt: {
       type: Number,
       default: new Date().getTime(),

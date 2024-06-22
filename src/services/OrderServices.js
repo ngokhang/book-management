@@ -36,7 +36,14 @@ export const OrderServices = {
     }
   },
 
-  create: async ({ userId, books, borrowDate, dueDate, status = BORROWED }) => {
+  create: async ({
+    userId,
+    books,
+    borrowDate,
+    dueDate,
+    status = BORROWED,
+    totalPrice,
+  }) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
@@ -121,7 +128,31 @@ export const OrderServices = {
         return acc;
       }, []);
 
-      let orderData = { userId, books, borrowDate, dueDate, status: BORROWED };
+      console.log(books);
+
+      // check totalPrice from frontend is correct
+      let correctPrice = 0;
+      await Promise.all(
+        books.map(async ({ _id, quantity }) => {
+          const bookInDB = await Book.findOne({ _id });
+          const days = moment(dueDate).diff(borrowDate, "day");
+          if (days > 7) {
+            correctPrice +=
+              quantity * bookInDB.price * (day + (days * 0.1) / 7);
+          } else {
+            correctPrice += quantity * bookInDB.price;
+          }
+        }),
+      );
+
+      let orderData = {
+        userId,
+        books,
+        borrowDate,
+        dueDate,
+        status: BORROWED,
+        totalPrice: correctPrice === totalPrice ? totalPrice : correctPrice,
+      };
       const newOrder = await Order.create(orderData);
 
       // Update quantity books in books
@@ -149,7 +180,7 @@ export const OrderServices = {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      console.log(updateData);
+      console.log(orderId);
       const { status, userId, books: newBooks } = updateData;
       const orderInDB = await Order.findOne({
         _id: orderId,
@@ -167,15 +198,20 @@ export const OrderServices = {
           { status: RETURNED },
           { new: true },
         );
+
         // Update the quantity of book in Book table
         await Promise.all(
-          booksInOrder.map(async ({ _id, quantity: quantityInOrder }) => {
-            const bookInDB = await Book.findOne({ _id }).lean();
-            await Book.updateOne({
-              _id,
-              quantity: bookInDB.quantity + quantityInOrder,
-            });
-          }),
+          booksInOrder.map(
+            async ({ _id: { _id }, quantity: quantityInOrder }) => {
+              const bookInDB = await Book.findOne({ _id }).lean();
+              await Book.updateOne(
+                { _id },
+                {
+                  quantity: bookInDB.quantity + quantityInOrder,
+                },
+              );
+            },
+          ),
         );
 
         return updateOrder;

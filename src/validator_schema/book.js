@@ -10,6 +10,7 @@ const book = {
     thumbnail: Joi.string(),
     isPublished: Joi.boolean().default(true),
     quantity: Joi.number().integer().greater(-1),
+    price: Joi.number().greater(0).required(),
   }),
 
   update: Joi.object().keys({
