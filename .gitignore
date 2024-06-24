@@ -3,3 +3,4 @@ package-lock.json
 .env
 /src/logs
 yarn.lock
+/src/uploads/*

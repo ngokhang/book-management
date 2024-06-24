@@ -39,20 +39,27 @@ export const BookController = {
   },
 
   create: async (req, res) => {
-    const bookData = {
-      ...req.body,
-      thumbnail:
-        process.env.DEVELOP_MODE === "false"
-          ? process.env.DOMAIN_DEV + "/src/uploads/default.png"
-          : process.env.DOMAIN_PRODUCT + "/src/uploads/default.png",
-    };
-    const files = req.files;
+    let bookData = { ...req.body };
+    if (!req.body.thumbnail) {
+      let bookData = {
+        ...req.body,
+        thumbnail:
+          process.env.DEVELOP_MODE === "true"
+            ? process.env.DOMAIN_DEV + "/src/uploads/default.png"
+            : process.env.DEFAULT_IMAGE_THUMBNAIL_URL,
+      };
 
-    return res.status(201).json(await BookServices.create({ bookData, files }));
+      return res.status(201).json(await BookServices.create({ bookData }));
+    }
+
+    return res.status(201).json(await BookServices.create({ bookData }));
   },
 
   update: async (req, res, next) => {
-    const bookData = { ...req.body };
+    const bookData = {
+      ...req.body,
+      thumbnail: req.body.thumbnail || process.env.DEFAULT_IMAGE_THUMBNAIL_URL,
+    };
     const bookId = req.params._id;
 
     return res

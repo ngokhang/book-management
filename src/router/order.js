@@ -19,7 +19,7 @@ OrderRouter.route("/")
     utils.asyncHandler(OrderController.delete),
   );
 OrderRouter.route("/:orderId").patch(
-  [AuthenticatedMiddleware(), validateData(schemas.order.update)],
+  [CheckIsAdminMiddleware(), validateData(schemas.order.update)],
   utils.asyncHandler(OrderController.update),
 );
 

@@ -21,10 +21,11 @@ const book = {
     thumbnail: Joi.string(),
     isPublished: Joi.boolean(),
     quantity: Joi.number().integer().greater(-1),
+    price: Joi.number().greater(0),
   }),
 
   delete: Joi.object().keys({
-    arrayId: Joi.array().items(Joi.string().hex().length(24)),
+    arrayId: Joi.array().items(Joi.string().hex().length(24)).required(),
   }),
 };
 

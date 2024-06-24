@@ -9,10 +9,12 @@ import { schemas } from "../validator_schema/index.js";
 const UserRouter = express.Router();
 
 // User routers
-UserRouter.route("/").get(
-  [AuthenticatedMiddleware(), CheckIsAdminMiddleware()],
-  UserController.getAll,
-);
+UserRouter.route("/")
+  .get(
+    [AuthenticatedMiddleware(), CheckIsAdminMiddleware()],
+    UserController.getAll,
+  )
+  .post([CheckIsAdminMiddleware()], UserController.create);
 UserRouter.route("/:id")
   .get([AuthenticatedMiddleware()], utils.asyncHandler(UserController.get))
   .put(

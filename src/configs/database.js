@@ -12,7 +12,15 @@ export const connectDB = () => {
         useUnifiedTopology: true,
       },
     )
-    .then(() => console.log("Connected to MongoDB."))
+    .then(() =>
+      console.log(
+        `Connected to MongoDB. ${
+          process.env.DEVELOP_MODE === "true"
+            ? process.env.DB_URI_LOCAL
+            : process.env.DB_URI
+        }`,
+      ),
+    )
     .catch((err) => {
       console.log("Failed to connect to MongoDB. Error: ", err.message);
     });

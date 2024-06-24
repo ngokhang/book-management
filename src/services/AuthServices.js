@@ -5,6 +5,9 @@ import { User } from "../model/UserSchema.js";
 import { JwtServices } from "./JwtServices.js";
 import { utils } from "../utils/index.js";
 import { Token } from "../model/token.js";
+import { REFRESH_TOKEN, TIMEZONE } from "../constants/index.js";
+import moment from "moment";
+import ms from "ms";
 
 export const AuthServices = {
   login: async (data) => {
@@ -14,7 +17,8 @@ export const AuthServices = {
     });
 
     // Check if user is not found
-    if (!userExisting) throw new ApiErrorHandler(401, "User not found");
+    if (!userExisting)
+      throw new ApiErrorHandler(400, "User hasn't existed in the system");
 
     const { _id, firstName, lastName, role } = userExisting;
 
@@ -26,7 +30,7 @@ export const AuthServices = {
 
     // Check if password is incorrect
     if (!isPasswordMatch)
-      throw new ApiErrorHandler(401, "Password is incorrect");
+      throw new ApiErrorHandler(401, "Email or password is invalid");
 
     // Generate access token and refresh token
     const accessToken = JwtServices.sign(
@@ -40,6 +44,15 @@ export const AuthServices = {
       process.env.REFRESH_TOKEN_LIFE,
     );
 
+    await Token.create({
+      typeToken: REFRESH_TOKEN,
+      user: userExisting._id,
+      value: refreshToken,
+      expiresAt: moment()
+        .tz(TIMEZONE)
+        .add(ms(process.env.REFRESH_TOKEN_LIFE), "milliseconds"),
+    });
+
     return {
       userExisting, // Return user data
       accessToken,
@@ -51,8 +64,7 @@ export const AuthServices = {
     const { email, password } = data;
     const existingUser = await User.findOne({ email });
 
-    if (existingUser)
-      throw new ApiErrorHandler(409, "User with this email already exists");
+    if (existingUser) throw new ApiErrorHandler(409, "This email has existed");
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);

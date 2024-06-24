@@ -51,4 +51,20 @@ export const UserController = {
       await UserServices.getUserOrders({ month, userId, page, limit }),
     );
   },
+  create: async (req, res) => {
+    const { firstName, lastName, email, password, role } = req.body;
+
+    return response(
+      res,
+      201,
+      "Create a user",
+      await UserServices.createUser({
+        firstName,
+        lastName,
+        email,
+        password,
+        role,
+      }),
+    );
+  },
 };

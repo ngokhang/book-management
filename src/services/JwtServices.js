@@ -12,24 +12,26 @@ export const JwtServices = {
   decode: (token) => {
     return jwt.decode(token);
   },
-  refreshToken: async (refresh_token, data) => {
+  refreshToken: async (refresh_token) => {
     // Check if refresh token is expired
-    const { exp } = jwt.verify(refresh_token, process.env.REFRESH_TOKEN_SECRET);
+    const { exp, iat, ...rest } = jwt.verify(
+      refresh_token,
+      process.env.REFRESH_TOKEN_SECRET,
+    );
     const isTokenExpired = utils.checkExpires(exp);
     if (isTokenExpired) {
       return null;
     }
-    const { _id, iat, exp: oldExp, ...rest } = data;
 
     const newAccessToken = JwtServices.sign(
       rest,
       process.env.ACCESS_TOKEN_SECRET,
-      "60s",
+      process.env.ACCESS_TOKEN_LIFE,
     );
     const newRefreshToken = JwtServices.sign(
       rest,
       process.env.REFRESH_TOKEN_SECRET,
-      "1d",
+      process.env.REFRESH_TOKEN_LIFE,
     );
 
     return {

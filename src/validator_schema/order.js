@@ -27,6 +27,7 @@ const order = {
         quantity: Joi.number().integer().greater(0).default(1).required(),
       }),
     ),
+    totalPrice: Joi.number().greater(0),
   }),
 
   delete: Joi.object().keys({

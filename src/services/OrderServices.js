@@ -6,6 +6,7 @@ import ApiErrorHandler from "../middlewares/ApiErrorHandler.js";
 import { Book } from "../model/Book.js";
 import { Order } from "../model/Order.js";
 import getTimestampOfDate from "../utils/getTimestampOfDate.js";
+import { User } from "../model/UserSchema.js";
 import _ from "lodash";
 
 export const OrderServices = {
@@ -47,6 +48,8 @@ export const OrderServices = {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
+      const userInDB = await User.findOne({ _id: userId });
+      if (!userInDB) throw new ApiErrorHandler(400, "User not existed");
       // calculate new quantity that user create new order
       const totalBooksInNewOrder = books.reduce(
         (acc, curr) => acc + curr.quantity,
@@ -82,6 +85,7 @@ export const OrderServices = {
       );
       // Check total book >= 5, if true throw error.
       if (quantityBookOrderedInMonth + totalBooksInNewOrder >= 6) {
+        console.log(quantityBookOrderedInMonth, totalBooksInNewOrder);
         throw new ApiErrorHandler(
           400,
           `You didn't return books that borrowed in this month. (${
@@ -113,37 +117,18 @@ export const OrderServices = {
       if (moment(dueDate).diff(borrowDate, "day") > 7)
         throw new ApiErrorHandler(400, "You only borrow on 7 days");
       // group by _id of book when duplicate
-      books = books.reduce((acc, curr) => {
-        const indexOfExisted = acc.findIndex(
-          (element) => element._id === curr._id,
-        );
-        if (indexOfExisted > -1) {
-          acc[indexOfExisted] = {
-            ...acc[indexOfExisted],
-            quantity: acc[indexOfExisted].quantity + curr.quantity,
-          };
-          return acc;
-        }
-        acc.push(curr);
-        return acc;
-      }, []);
-
-      console.log(books);
+      books = OrderServices.groupBooksDuplicateInOrder(books);
 
       // check totalPrice from frontend is correct
       let correctPrice = 0;
-      await Promise.all(
-        books.map(async ({ _id, quantity }) => {
-          const bookInDB = await Book.findOne({ _id });
-          const days = moment(dueDate).diff(borrowDate, "day");
-          if (days > 7) {
-            correctPrice +=
-              quantity * bookInDB.price * (day + (days * 0.1) / 7);
-          } else {
-            correctPrice += quantity * bookInDB.price;
-          }
-        }),
+      correctPrice = await OrderServices.calculateTotalPriceInOrder(
+        books,
+        borrowDate,
+        dueDate,
       );
+
+      if (totalPrice !== correctPrice)
+        throw new ApiErrorHandler(400, "Total price calculate is incorrect");
 
       let orderData = {
         userId,
@@ -151,7 +136,7 @@ export const OrderServices = {
         borrowDate,
         dueDate,
         status: BORROWED,
-        totalPrice: correctPrice === totalPrice ? totalPrice : correctPrice,
+        totalPrice: totalPrice,
       };
       const newOrder = await Order.create(orderData);
 
@@ -180,8 +165,7 @@ export const OrderServices = {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      console.log(orderId);
-      const { status, userId, books: newBooks } = updateData;
+      let { status, userId, books: newBooks } = updateData;
       const orderInDB = await Order.findOne({
         _id: orderId,
       });
@@ -218,6 +202,8 @@ export const OrderServices = {
       }
       // Check use case user change book
       if (newBooks && newBooks.length > 0) {
+        newBooks = OrderServices.groupBooksDuplicateInOrder(newBooks);
+        updateData.books = newBooks;
         const booksInOrder = orderInDB.books;
         // process new books
         await Promise.all(
@@ -245,10 +231,15 @@ export const OrderServices = {
           }),
         );
       }
+      const totalPriceOrder = await OrderServices.calculateTotalPriceInOrder(
+        newBooks,
+        updateData.borrowDate,
+        updateData.dueDate,
+      );
 
       const updateOrder = await Order.findOneAndUpdate(
         { _id: orderId },
-        updateData,
+        { ...updateData, totalPrice: totalPriceOrder },
       );
 
       await session.commitTransaction();
@@ -281,5 +272,34 @@ export const OrderServices = {
     } catch (error) {
       throw error;
     }
+  },
+
+  calculateTotalPriceInOrder: async (booksOrder, borrowDate, dueDate) => {
+    let totalPrice = 0;
+    const distanceDay = moment(dueDate).tz(TIMEZONE).diff(borrowDate, "day");
+
+    for await (const { _id: bookId, quantity: quantityOrder } of booksOrder) {
+      const bookInDB = await Book.findOne({ _id: { $eq: bookId } }).lean();
+      if (!bookInDB)
+        throw new ApiErrorHandler(400, "Some one of books not existed");
+      totalPrice += bookInDB.price * quantityOrder;
+    }
+
+    if (distanceDay > 7) totalPrice += totalPrice * 0.2;
+
+    return totalPrice;
+  },
+
+  groupBooksDuplicateInOrder: (booksOrder) => {
+    return booksOrder.reduce((acc, curr) => {
+      const { _id: bookId, quantity: quantityOrder } = curr;
+      const indexBookIdExisted = acc.findIndex((item) => item._id === bookId);
+
+      if (indexBookIdExisted !== -1)
+        acc[indexBookIdExisted].quantity += quantityOrder;
+      else acc.push(curr);
+
+      return acc;
+    }, []);
   },
 };

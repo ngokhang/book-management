@@ -36,11 +36,12 @@ export const UploadFileServices = {
   },
 
   uploadFileIntoGoogleDrive: async (
-    filename = "Untitled",
+    filename = "default",
     mimetype = "image/png",
     pathInLocal,
     filePublic = false,
   ) => {
+    console.log(">>> ", process.cwd() + "/src/uploads/" + filename);
     try {
       const res = await driver.files.create({
         requestBody: {
@@ -50,7 +51,7 @@ export const UploadFileServices = {
         },
         media: {
           mimeType: mimetype,
-          body: fs.createReadStream(pathInLocal),
+          body: fs.createReadStream(process.cwd() + "/src/uploads/" + filename),
         },
       });
 
@@ -83,11 +84,8 @@ export const UploadFileServices = {
 
   uploadFileToDiskStorage: async ({ file }) => {
     try {
-      if (
-        path.extname(file.originalname) !== ".png" ||
-        path.extname(file.originalname) !== ".jpg" ||
-        path.extname(file.originalname) !== ".jpeg"
-      )
+      const extensionAllow = [".png", ".jpg", ".jpeg"];
+      if (!extensionAllow.includes(path.extname(file.originalname)))
         throw new ApiErrorHandler(
           422,
           "Invalid image, only allowed : .png, .jpg, .jpeg",
@@ -96,9 +94,10 @@ export const UploadFileServices = {
       const fileName = uniqueSuffix + "-" + file.originalname;
       const pathStorage = process.cwd() + "/src/uploads/" + fileName;
       fs.writeFileSync(pathStorage, file.buffer);
-      const pathFinal = process.env.DEVELOP_MODE
-        ? `${process.env.DOMAIN_DEV}/src/uploads/${fileName}`
-        : `${process.env.DOMAIN_PROD}/src/uploads/${fileName}`;
+      const pathFinal =
+        process.env.DEVELOP_MODE === "true"
+          ? `${process.env.DOMAIN_DEV}/src/uploads/${fileName}`
+          : `${process.env.DOMAIN_PRODUCT}/src/uploads/${fileName}`;
       return pathFinal;
     } catch (error) {
       throw error;
