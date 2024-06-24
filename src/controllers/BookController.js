@@ -41,9 +41,10 @@ export const BookController = {
   create: async (req, res) => {
     const bookData = {
       ...req.body,
-      thumbnail: process.env.DEVELOP_MODE
-        ? process.env.DOMAIN_DEV + "/src/uploads/default.png"
-        : process.env.DOMAIN_PROD + "/src/uploads/default.png",
+      thumbnail:
+        process.env.DEVELOP_MODE === "false"
+          ? process.env.DOMAIN_DEV + "/src/uploads/default.png"
+          : process.env.DOMAIN_PRODUCT + "/src/uploads/default.png",
     };
     const files = req.files;
 
