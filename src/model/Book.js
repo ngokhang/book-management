@@ -18,7 +18,7 @@ const BookSchema = new Schema(
         type: Schema.Types.ObjectId,
         ref: "Categories",
         required: true,
-        autopopulate: true,
+        autopopulate: { select: "name description" },
       },
     ],
     description: {

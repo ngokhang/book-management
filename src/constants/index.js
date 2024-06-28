@@ -1,7 +1,8 @@
 export const BOOK = "Book";
 export const CATEGORY = "Category";
 export const AUTHOR = "Author";
-export const USER = "User";
+export const USER = "user";
+export const ADMIN = "admin";
 export const TOKEN = "Token";
 export const REFRESH_TOKEN = "RefreshToken";
 export const ACCESS_TOKEN = "AccessToken";

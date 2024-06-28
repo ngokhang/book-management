@@ -58,18 +58,6 @@ export const OrderServices = {
       // books in each orders of user has userId in Order table
       const listBookInOrderExistedByUserId = await Order.find({
         status: BORROWED,
-        borrowDate: {
-          $gte: getTimestampOfDate(
-            1,
-            new Date().getMonth() + 1,
-            new Date().getFullYear(),
-          ),
-          $lt: getTimestampOfDate(
-            0,
-            new Date().getMonth() + 2,
-            new Date().getFullYear(),
-          ),
-        },
         userId,
       });
       // calculate total book that user borrowed in this month
@@ -88,9 +76,7 @@ export const OrderServices = {
         console.log(quantityBookOrderedInMonth, totalBooksInNewOrder);
         throw new ApiErrorHandler(
           400,
-          `You didn't return books that borrowed in this month. (${
-            quantityBookOrderedInMonth + totalBooksInNewOrder
-          }/5 books)`,
+          `Some of books that you borrowed, that has not been paid.`,
         );
       }
       // Check valid book in order is valid

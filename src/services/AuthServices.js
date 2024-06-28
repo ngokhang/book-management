@@ -66,12 +66,11 @@ export const AuthServices = {
 
     if (existingUser) throw new ApiErrorHandler(409, "This email has existed");
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // const salt = await bcrypt.genSalt(10);
+    // const hashedPassword = await bcrypt.hash(password, salt);
 
     return await User.create({
       ...data,
-      password: hashedPassword,
     })
       .then((res) => {
         const { password, ...user } = res.toObject();

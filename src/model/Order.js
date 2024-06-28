@@ -54,5 +54,4 @@ const OrderSchema = new Schema(
 )
   .plugin(autopopulate)
   .plugin(paginatePlugin);
-
 export const Order = mongoose.model("Order", OrderSchema);

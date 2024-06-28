@@ -13,12 +13,12 @@ AnalystRouter.route("/order").get(
 );
 
 AnalystRouter.route("/book").get(
-  AnalystController.getMostBorrowedBooksDescending,
+  utils.asyncHandler(AnalystController.getMostBorrowedBooksDescending),
 );
 
 AnalystRouter.route("/user/order").get(
   [validateData(schemas.analyst.getOrder)],
-  AnalystController.getListUsersBorrowTheMost,
+  utils.asyncHandler(AnalystController.getListUsersBorrowTheMost),
 );
 
 export default AnalystRouter;

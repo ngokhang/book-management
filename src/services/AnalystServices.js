@@ -29,17 +29,16 @@ const AnalystServices = {
         ); // Ex: 31/1/2024
 
         if (startRange && endRange) {
-          filter.borrowDate = startRangeTimestamp;
-          filter.dueDate = endRangeTimestamp;
+          filter.borrowDate = { $gte: startRangeTimestamp };
+          filter.dueDate = { $lte: endRangeTimestamp };
         } else if (startRange === endRange || !endRange) {
-          filter.borrowDate = startRangeTimestamp;
-          filter.dueDate = endRangeTimestamp;
+          filter.borrowDate = { $gte: startRangeTimestamp };
+          filter.dueDate = { $lte: endRangeTimestamp };
         }
       }
       if (userId) {
         filter.userId = userId;
       }
-
       const response = await Order.paginate(filter, options);
 
       return response;

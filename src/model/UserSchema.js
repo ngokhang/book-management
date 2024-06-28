@@ -1,5 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import paginatePlugin from "./plugins/paginate.js";
+import bcrypt from "bcrypt";
+import { ADMIN, USER } from "../constants/index.js";
 
 const userSchema = new Schema({
   firstName: {
@@ -24,6 +26,7 @@ const userSchema = new Schema({
   },
   role: {
     type: String,
+    enum: [USER, ADMIN],
     required: true,
     default: "user",
   },
@@ -40,5 +43,13 @@ const userSchema = new Schema({
     default: null,
   },
 }).plugin(paginatePlugin);
+
+userSchema.pre("save", async function (next) {
+  const user = this;
+  if (!user.isModified("password")) return next();
+  const salt = await bcrypt.genSalt(10);
+  user.password = await bcrypt.hash(user.password, salt);
+  next();
+});
 
 export const User = mongoose.model("User", userSchema);
